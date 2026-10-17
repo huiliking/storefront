@@ -55,6 +55,12 @@ export const LOCALE_DEFINITIONS = {
 		htmlLang: "fr",
 		ogLocale: "fr_FR",
 	},
+	"fr-ca": {
+		bcp47: "fr-CA",
+		graphqlLanguageCode: "FR_CA",
+		htmlLang: "fr-CA",
+		ogLocale: "fr_CA",
+	},
 	fi: {
 		bcp47: "fi-FI",
 		graphqlLanguageCode: "FI",

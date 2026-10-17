@@ -17,6 +17,9 @@ fragment ProductLocaleSlugTranslations on Product {
 	slugFR: translation(languageCode: FR) {
 		slug
 	}
+	slugFR_CA: translation(languageCode: FR_CA) {
+		slug
+	}
 	slugFI: translation(languageCode: FI) {
 		slug
 	}
@@ -42,6 +45,9 @@ fragment CategoryLocaleSlugTranslations on Category {
 		slug
 	}
 	slugFR: translation(languageCode: FR) {
+		slug
+	}
+	slugFR_CA: translation(languageCode: FR_CA) {
 		slug
 	}
 	slugFI: translation(languageCode: FI) {
@@ -71,6 +77,9 @@ fragment CollectionLocaleSlugTranslations on Collection {
 	slugFR: translation(languageCode: FR) {
 		slug
 	}
+	slugFR_CA: translation(languageCode: FR_CA) {
+		slug
+	}
 	slugFI: translation(languageCode: FI) {
 		slug
 	}
@@ -96,6 +105,9 @@ fragment PageLocaleSlugTranslations on Page {
 		slug
 	}
 	slugFR: translation(languageCode: FR) {
+		slug
+	}
+	slugFR_CA: translation(languageCode: FR_CA) {
 		slug
 	}
 	slugFI: translation(languageCode: FI) {
