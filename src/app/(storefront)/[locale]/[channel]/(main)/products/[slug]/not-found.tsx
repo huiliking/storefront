@@ -2,15 +2,21 @@
 
 import Link from "next/link";
 import { Search, Home, ArrowLeft } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useStorefrontHref } from "@/hooks/use-storefront-href";
 import { buttonClassName } from "@/ui/components/ui/button";
 
 /**
  * Product not found page.
  *
  * Shown when a product slug doesn't exist or has been removed.
- * Provides helpful navigation options.
+ * Provides helpful navigation options. Copy comes from `common.notFound` (next-intl).
  */
 export default function ProductNotFound() {
+	const t = useTranslations("common.notFound");
+	// Inside `/{locale}/{channel}/…`, so the listing link keeps the shopper's locale and channel.
+	const productsHref = useStorefrontHref("/products");
+
 	return (
 		<div className="flex min-h-[50vh] flex-col items-center justify-center px-4 py-16">
 			<div className="mx-auto max-w-md text-center">
@@ -20,23 +26,21 @@ export default function ProductNotFound() {
 				</span>
 
 				{/* Heading */}
-				<h1 className="mb-2 text-balance text-h1 text-foreground">Product Not Found</h1>
+				<h1 className="mb-2 text-balance text-h1 text-foreground">{t("productTitle")}</h1>
 
 				{/* Message */}
-				<p className="mb-8 text-muted-foreground">
-					This product may have been removed, renamed, or is temporarily unavailable.
-				</p>
+				<p className="mb-8 text-muted-foreground">{t("productDescription")}</p>
 
 				{/* Actions */}
 				<div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-					<Link href="/products" className={buttonClassName({ asLink: true })}>
+					<Link href={productsHref} className={buttonClassName({ asLink: true })}>
 						<Search className="h-4 w-4" />
-						Browse Products
+						{t("browseProducts")}
 					</Link>
 
 					<Link href="/" className={buttonClassName({ asLink: true, variant: "outline-solid" })}>
 						<Home className="h-4 w-4" />
-						Go Home
+						{t("goHome")}
 					</Link>
 				</div>
 
@@ -50,7 +54,7 @@ export default function ProductNotFound() {
 					className="mt-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
 				>
 					<ArrowLeft className="h-3 w-3" />
-					Go back
+					{t("goBack")}
 				</Link>
 			</div>
 		</div>

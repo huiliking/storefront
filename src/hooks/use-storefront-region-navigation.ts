@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { isLocaleSlug, isStorefrontLocaleSlug } from "@/config/locale";
 import { getPairedChannelForLocale } from "@/config/locale-channel";
 import { useCatalogIdentity } from "@/lib/catalog/catalog-identity-bridge";
@@ -30,6 +31,7 @@ export function useStorefrontRegionNavigation() {
 	const searchParams = useSearchParams();
 	const params = useParams<{ locale?: string; channel?: string }>();
 	const catalogIdentity = useCatalogIdentity();
+	const t = useTranslations("nav.regionPicker");
 
 	const locale = params.locale ?? "";
 	const channel = params.channel ?? "";
@@ -45,9 +47,7 @@ export function useStorefrontRegionNavigation() {
 		const targetChannel = getPairedChannelForLocale(newLocale, channel);
 
 		if (targetChannel !== channel && hasCartCookieForChannel(channel)) {
-			const proceed = window.confirm(
-				"Your cart is tied to this market. Switching markets starts a new cart — continue?",
-			);
+			const proceed = window.confirm(t("confirmMarketSwitch"));
 			if (!proceed) return;
 		}
 
@@ -75,9 +75,7 @@ export function useStorefrontRegionNavigation() {
 		if (isLocaleSlug(newChannel)) return;
 
 		if (hasCartCookieForChannel(channel)) {
-			const proceed = window.confirm(
-				"Your cart is tied to this market. Switching markets starts a new cart — continue?",
-			);
+			const proceed = window.confirm(t("confirmMarketSwitch"));
 			if (!proceed) return;
 		}
 

@@ -30,6 +30,15 @@
 		"pagination": {
 			"previous": "이전",
 			"next": "다음"
+		},
+		"notFound": {
+			"title": "페이지를 찾을 수 없습니다",
+			"description": "찾으시는 페이지가 없거나 이동되었습니다.",
+			"goHome": "홈으로",
+			"browseProducts": "상품 둘러보기",
+			"productTitle": "상품을 찾을 수 없습니다",
+			"productDescription": "이 상품은 삭제되었거나 이름이 변경되었거나 일시적으로 이용할 수 없습니다.",
+			"goBack": "뒤로 가기"
 		}
 	},
 	"pdp": {
@@ -141,7 +150,8 @@
 			"languageTitle": "언어",
 			"languageDescription": "사이트 문구 및 표시 형식",
 			"marketTitle": "지역",
-			"marketDescription": "통화, 세금 및 배송"
+			"marketDescription": "통화, 세금 및 배송",
+			"confirmMarketSwitch": "장바구니가 이 마켓에 연결되어 있습니다. 마켓을 바꾸면 새 장바구니가 시작됩니다. 계속하시겠습니까?"
 		}
 	},
 	"account": {

@@ -30,6 +30,15 @@
 		"pagination": {
 			"previous": "Poprzednia",
 			"next": "Następna"
+		},
+		"notFound": {
+			"title": "Nie znaleziono strony",
+			"description": "Strona, której szukasz, nie istnieje lub została przeniesiona.",
+			"goHome": "Strona główna",
+			"browseProducts": "Przeglądaj produkty",
+			"productTitle": "Nie znaleziono produktu",
+			"productDescription": "Ten produkt mógł zostać usunięty, przemianowany lub jest chwilowo niedostępny.",
+			"goBack": "Wróć"
 		}
 	},
 	"pdp": {
@@ -150,7 +159,8 @@
 			"languageTitle": "Język",
 			"languageDescription": "Treść i formatowanie",
 			"marketTitle": "Rynek",
-			"marketDescription": "Waluta, podatki i dostawa"
+			"marketDescription": "Waluta, podatki i dostawa",
+			"confirmMarketSwitch": "Twój koszyk jest powiązany z tym rynkiem. Zmiana rynku utworzy nowy koszyk. Kontynuować?"
 		}
 	},
 	"account": {

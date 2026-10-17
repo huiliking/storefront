@@ -30,6 +30,15 @@
 		"pagination": {
 			"previous": "Previous",
 			"next": "Next"
+		},
+		"notFound": {
+			"title": "Page Not Found",
+			"description": "The page you're looking for doesn't exist or has been moved.",
+			"goHome": "Go Home",
+			"browseProducts": "Browse Products",
+			"productTitle": "Product Not Found",
+			"productDescription": "This product may have been removed, renamed, or is temporarily unavailable.",
+			"goBack": "Go back"
 		}
 	},
 	"pdp": {
@@ -150,7 +159,8 @@
 			"languageTitle": "Language",
 			"languageDescription": "Site copy & formatting",
 			"marketTitle": "Market",
-			"marketDescription": "Currency, tax & shipping"
+			"marketDescription": "Currency, tax & shipping",
+			"confirmMarketSwitch": "Your cart is tied to this market. Switching markets starts a new cart — continue?"
 		}
 	},
 	"account": {

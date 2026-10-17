@@ -30,6 +30,15 @@
 		"pagination": {
 			"previous": "Forrige",
 			"next": "Neste"
+		},
+		"notFound": {
+			"title": "Fant ikke siden",
+			"description": "Siden du leter etter, finnes ikke eller er flyttet.",
+			"goHome": "Til forsiden",
+			"browseProducts": "Se produkter",
+			"productTitle": "Fant ikke produktet",
+			"productDescription": "Produktet kan være fjernet, ha fått nytt navn eller være midlertidig utilgjengelig.",
+			"goBack": "Tilbake"
 		}
 	},
 	"pdp": {
@@ -150,7 +159,8 @@
 			"languageTitle": "Språk",
 			"languageDescription": "Tekst og formatering",
 			"marketTitle": "Marked",
-			"marketDescription": "Valuta, avgifter og frakt"
+			"marketDescription": "Valuta, avgifter og frakt",
+			"confirmMarketSwitch": "Handlekurven din er knyttet til dette markedet. Bytter du marked, opprettes en ny handlekurv. Vil du fortsette?"
 		}
 	},
 	"account": {
