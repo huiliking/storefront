@@ -4,7 +4,9 @@ import path from "path";
 
 const buildEslintCommand = (filenames) => {
 	const files = filenames
-		.map((filename) => path.relative(process.cwd(), filename))
+		// Forward slashes: on Windows, lint-staged treats `\` as an escape and strips it
+		// (`src\app\(root)\x.tsx` → `srcapp(root)x.tsx`), so ESLint finds no file.
+		.map((filename) => path.relative(process.cwd(), filename).split(path.sep).join("/"))
 		.map((filename) => `"${filename}"`)
 		.join(" ");
 
