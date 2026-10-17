@@ -17,11 +17,18 @@ export type LocaleDefinition = {
 };
 
 /**
- * URL slug → runtime locale settings. Extend when adding languages.
+ * URL slug → runtime locale settings. Extend when adding languages — follow
+ * `docs/adding-a-locale-or-market.md`.
  *
- * `graphqlLanguageCode` uses Saleor's base language enum (e.g. `PL`), not regional
- * variants (`PL_PL`). Dashboard translations are stored under the base code — see
- * `/translations/PL/…` in Saleor admin.
+ * `graphqlLanguageCode` must name the exact Saleor `LanguageCodeEnum` value that
+ * translators fill in the Dashboard (`/translations/<CODE>/…`). Saleor keeps base and
+ * regional codes as separate buckets: `FR` and `FR_CA` are different translations.
+ * - One variant of a language → the base code is fine (`fr` → `FR`).
+ * - Several variants with different copy → each needs its own regional code
+ *   (`fr-ca` → `FR_CA`). Mapping two slugs to the same code makes both fetch the same
+ *   text, silently ignoring the regional translation.
+ * - Enum values use underscores (`FR_CA`), never hyphens: GraphQL names allow only
+ *   letters, digits and `_`. A typo is not caught by TypeScript, only by Saleor at runtime.
  */
 export const LOCALE_DEFINITIONS = {
 	en: {
