@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { DefaultChannelSlug } from "@/app/config";
 import { getStaticStorefrontChannelSlugs, isAllowedStorefrontChannel } from "@/config/channels";
-import { getDefaultLocaleSlug, isLocaleSlug, isStorefrontLocaleSlug } from "@/config/locale";
+import { getDefaultLocaleSlug, isStorefrontLocaleSlug } from "@/config/locale";
 import { BROWSE_LOCALE_COOKIE, getBrowseLocaleCookieOptions } from "@/lib/browse-locale";
 import { buildStorefrontPath } from "@/lib/storefront-path";
 
@@ -67,17 +67,6 @@ export function middleware(request: NextRequest) {
 		return NextResponse.next();
 	}
 
-	// Disabled locale slug (defined but not in NEXT_PUBLIC_STOREFRONT_LOCALES) → canonical default locale
-	if (isLocaleSlug(first) && !isStorefrontLocaleSlug(first)) {
-		if (second && isChannelSlug(second)) {
-			const url = request.nextUrl.clone();
-			const suffix = rest.length > 0 ? `/${rest.join("/")}` : "";
-			url.pathname = buildStorefrontPath(defaultLocale, second, suffix);
-			return withBrowseLocaleCookie(request, NextResponse.redirect(url, 308), defaultLocale);
-		}
-		return NextResponse.next();
-	}
-
 	// Canonical format: /{locale}/{channel}/…
 	if (isStorefrontLocaleSlug(first)) {
 		if (second && isChannelSlug(second)) {
@@ -99,6 +88,16 @@ export function middleware(request: NextRequest) {
 		const url = request.nextUrl.clone();
 		const suffix = [second, ...rest].filter(Boolean).join("/");
 		url.pathname = buildStorefrontPath(defaultLocale, first, suffix ? `/${suffix}` : "");
+		return withBrowseLocaleCookie(request, NextResponse.redirect(url, 308), defaultLocale);
+	}
+
+	// Any locale segment this storefront doesn't serve (unknown like `ja-jp`, or defined but not
+	// enabled) before a known channel → default locale, same channel and path. Redirecting here,
+	// before rendering, avoids a not-found page streamed under an already-sent HTTP 200 (soft 404).
+	if (second && isChannelSlug(second)) {
+		const url = request.nextUrl.clone();
+		const suffix = rest.length > 0 ? `/${rest.join("/")}` : "";
+		url.pathname = buildStorefrontPath(defaultLocale, second, suffix);
 		return withBrowseLocaleCookie(request, NextResponse.redirect(url, 308), defaultLocale);
 	}
 
