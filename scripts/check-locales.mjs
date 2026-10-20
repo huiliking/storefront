@@ -10,7 +10,9 @@
  *
  * Errors (exit 1):
  *   1. `NEXT_PUBLIC_STOREFRONT_LOCALES`, `NEXT_PUBLIC_DEFAULT_LOCALE` and the locale side of
- *      `NEXT_PUBLIC_STOREFRONT_LOCALE_CHANNELS` only use defined locale slugs.
+ *      `NEXT_PUBLIC_STOREFRONT_LOCALE_CHANNELS` only use defined locale slugs, and the effective
+ *      default locale (env value or the "en" fallback) is enabled — otherwise middleware redirects
+ *      it to itself in a loop.
  *   2. Every `graphqlLanguageCode` is a real Saleor `LanguageCodeEnum` value
  *      (read from `schema.graphql` or generated `src/gql/graphql.ts`).
  *   3. Every defined locale has `messages/<slug>.json`.
@@ -61,6 +63,18 @@ const defaultLocale = process.env.NEXT_PUBLIC_DEFAULT_LOCALE?.trim().toLowerCase
 if (defaultLocale && !isDefined(defaultLocale)) {
 	errors.push(
 		`NEXT_PUBLIC_DEFAULT_LOCALE="${defaultLocale}" is not in LOCALE_DEFINITIONS; it would fall back to "en".`,
+	);
+}
+
+// The effective default (env value when defined, else the hard-coded "en" in locale.ts) must be
+// enabled: middleware redirects non-enabled locale slugs to the default, so a disabled default
+// redirects to itself forever.
+const effectiveDefault = defaultLocale && isDefined(defaultLocale) ? defaultLocale : "en";
+if (enabled.length > 0 && !enabled.includes(effectiveDefault)) {
+	errors.push(
+		`Default locale "${effectiveDefault}"${defaultLocale ? "" : " (fallback; NEXT_PUBLIC_DEFAULT_LOCALE unset)"} ` +
+			`is not in NEXT_PUBLIC_STOREFRONT_LOCALES (${enabled.join(", ")}). Middleware would redirect ` +
+			`/${effectiveDefault}/… to itself in a loop.`,
 	);
 }
 
