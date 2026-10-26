@@ -16,6 +16,7 @@ pages:
     hero-subheading: "Premiumprodukter med eksepsjonell kvalitet. Oppdag vårt kuraterte utvalg."
     hero-cta-label: "Handle alt"
     featured-heading: "Utvalgte produkter"
+    categories-heading: "Handle etter kategori"
     brand-story-heading: "Bygget for ekte handel"
     brand-story-paragraph-1: "Paper er en minimal, produksjonsklar nettbutikk for Saleor — ren som et blankt ark, klar til lansering."
     brand-story-paragraph-2: "Tilpass seksjoner i koden, koble til katalogen din og behold testede handlekurv-, kasse- og produktsider."

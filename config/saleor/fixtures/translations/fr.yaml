@@ -16,6 +16,7 @@ pages:
     hero-subheading: "Des produits premium d'une qualité exceptionnelle. Découvrez notre sélection soignée."
     hero-cta-label: "Tout voir"
     featured-heading: "Produits en vedette"
+    categories-heading: "Acheter par catégorie"
     brand-story-heading: "Conçu pour le commerce réel"
     brand-story-paragraph-1: "Paper est une vitrine minimaliste et prête pour la production pour Saleor — propre comme une page blanche, prête à être déployée."
     brand-story-paragraph-2: "Personnalisez les sections dans le code, connectez votre catalogue et conservez des pages panier, paiement et produit éprouvées."
