@@ -57,7 +57,8 @@ export const LOCALE_DEFINITIONS = {
 	},
 	"fr-ca": {
 		bcp47: "fr-CA",
-		graphqlLanguageCode: "FR_CA",
+		// Deliberately shares France's `FR` content until Canadian copy exists in Saleor.
+		graphqlLanguageCode: "FR",
 		htmlLang: "fr-CA",
 		ogLocale: "fr_CA",
 	},
