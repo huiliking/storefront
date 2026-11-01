@@ -1,9 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { DefaultChannelSlug } from "@/app/config";
-import { getStaticStorefrontChannelSlugs, isAllowedStorefrontChannel } from "@/config/channels";
-import { getDefaultLocaleSlug, isStorefrontLocaleSlug } from "@/config/locale";
+import { isLocaleSlug, isStorefrontLocaleSlug } from "@/config/locale";
 import { BROWSE_LOCALE_COOKIE, getBrowseLocaleCookieOptions } from "@/lib/browse-locale";
-import { buildStorefrontPath } from "@/lib/storefront-path";
 
 const RESERVED_ROOT_SEGMENTS = new Set([
 	"api",
@@ -14,11 +11,6 @@ const RESERVED_ROOT_SEGMENTS = new Set([
 	"robots.txt",
 	"sitemap.xml",
 ]);
-
-function isChannelSlug(segment: string): boolean {
-	const allowed = getStaticStorefrontChannelSlugs();
-	return isAllowedStorefrontChannel(segment, allowed);
-}
 
 function withBrowseLocaleCookie(request: NextRequest, response: NextResponse, locale: string): NextResponse {
 	if (!isStorefrontLocaleSlug(locale)) {
@@ -48,57 +40,23 @@ export function middleware(request: NextRequest) {
 	}
 
 	const segments = pathname.split("/").filter(Boolean);
-	const defaultLocale = getDefaultLocaleSlug();
-	const defaultChannel = DefaultChannelSlug ?? getStaticStorefrontChannelSlugs()[0];
 
-	// Root → default browse home
+	// `/` is handled by `(root)/page.tsx`, which redirects to Saleor's default channel.
 	if (segments.length === 0) {
-		if (!defaultChannel) {
-			return NextResponse.next();
-		}
-		const url = request.nextUrl.clone();
-		url.pathname = buildStorefrontPath(defaultLocale, defaultChannel);
-		return withBrowseLocaleCookie(request, NextResponse.redirect(url, 308), defaultLocale);
+		return NextResponse.next();
 	}
 
-	const [first, second, ...rest] = segments;
+	const [first, second] = segments;
 
 	if (RESERVED_ROOT_SEGMENTS.has(first)) {
 		return NextResponse.next();
 	}
 
-	// Canonical format: /{locale}/{channel}/…
-	if (isStorefrontLocaleSlug(first)) {
-		if (second && isChannelSlug(second)) {
-			return withBrowseLocaleCookie(request, NextResponse.next(), first);
-		}
-
-		// /{locale} only → add default channel
-		if (!second && defaultChannel) {
-			const url = request.nextUrl.clone();
-			url.pathname = buildStorefrontPath(first, defaultChannel);
-			return withBrowseLocaleCookie(request, NextResponse.redirect(url, 308), first);
-		}
-
-		return NextResponse.next();
-	}
-
-	// Legacy: /{channel}/… → /{defaultLocale}/{channel}/…
-	if (isChannelSlug(first)) {
-		const url = request.nextUrl.clone();
-		const suffix = [second, ...rest].filter(Boolean).join("/");
-		url.pathname = buildStorefrontPath(defaultLocale, first, suffix ? `/${suffix}` : "");
-		return withBrowseLocaleCookie(request, NextResponse.redirect(url, 308), defaultLocale);
-	}
-
-	// Any locale segment this storefront doesn't serve (unknown like `ja-jp`, or defined but not
-	// enabled) before a known channel → default locale, same channel and path. Redirecting here,
-	// before rendering, avoids a not-found page streamed under an already-sent HTTP 200 (soft 404).
-	if (second && isChannelSlug(second)) {
-		const url = request.nextUrl.clone();
-		const suffix = rest.length > 0 ? `/${rest.join("/")}` : "";
-		url.pathname = buildStorefrontPath(defaultLocale, second, suffix);
-		return withBrowseLocaleCookie(request, NextResponse.redirect(url, 308), defaultLocale);
+	// Channels and locale↔channel pairs are managed in Saleor, so this edge function holds no
+	// channel list and does no redirects. `[channel]/layout.tsx` validates `/{locale}/{channel}`
+	// against Saleor and renders not-found for anything else.
+	if (second && isLocaleSlug(first)) {
+		return withBrowseLocaleCookie(request, NextResponse.next(), first);
 	}
 
 	return NextResponse.next();

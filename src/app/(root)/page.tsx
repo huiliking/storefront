@@ -1,30 +1,34 @@
 import { redirect } from "next/navigation";
-import { DefaultChannelSlug } from "@/app/config";
-import { getDefaultLocaleSlug } from "@/config/locale";
+import { getStorefrontChannels } from "@/lib/channels/get-storefront-channels";
+import { CHANNEL_METADATA_KEYS, getDefaultStorefrontChannel } from "@/lib/channels/storefront-channels";
 import { buildStorefrontPath } from "@/lib/storefront-path";
 
 /**
- * Root page redirects to the default locale + channel.
+ * Root page redirects to Saleor's default storefront channel, in that channel's default locale.
  *
- * Requires NEXT_PUBLIC_DEFAULT_CHANNEL to be set.
- * In development, shows setup instructions if not configured.
+ * The default channel is the one with `storefront.default = true` in its metadata (Dashboard →
+ * Channels → channel → metadata), else the first storefront channel. No `.env` setting.
  */
-export default function RootPage() {
-	if (DefaultChannelSlug) {
-		redirect(buildStorefrontPath(getDefaultLocaleSlug(), DefaultChannelSlug));
+export default async function RootPage() {
+	const channel = getDefaultStorefrontChannel(await getStorefrontChannels());
+
+	if (channel) {
+		redirect(buildStorefrontPath(channel.defaultLocale, channel.slug));
 	}
 
 	return (
 		<div className="flex min-h-screen items-center justify-center bg-background p-8">
 			<div className="max-w-md text-center">
-				<h1 className="mb-4 text-balance text-h1 text-foreground">Channel Not Configured</h1>
+				<h1 className="mb-4 text-balance text-h1 text-foreground">No Storefront Channel</h1>
 				<p className="mb-6 text-muted-foreground">
-					Set the <code className="rounded bg-muted px-2 py-1">NEXT_PUBLIC_DEFAULT_CHANNEL</code> environment
-					variable to your Saleor channel slug.
+					No active Saleor channel lists market locales. In the Dashboard, open Configuration → Channels → a
+					channel → metadata, and add:
 				</p>
 				<div className="rounded-lg bg-muted p-4 text-left">
-					<p className="mb-2 text-sm font-medium text-foreground">In your .env.local file:</p>
-					<code className="text-sm text-muted-foreground">NEXT_PUBLIC_DEFAULT_CHANNEL=default-channel</code>
+					<code className="block text-sm text-muted-foreground">{CHANNEL_METADATA_KEYS.locales} = en</code>
+					<code className="block text-sm text-muted-foreground">
+						{CHANNEL_METADATA_KEYS.isDefault} = true
+					</code>
 				</div>
 			</div>
 		</div>

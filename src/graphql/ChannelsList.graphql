@@ -8,5 +8,10 @@ query ChannelsList {
 		defaultCountry {
 			code
 		}
+		# Public metadata carries the storefront market config (see lib/channels/storefront-channels.ts).
+		metadata {
+			key
+			value
+		}
 	}
 }

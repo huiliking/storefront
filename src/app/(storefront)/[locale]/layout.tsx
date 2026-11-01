@@ -5,11 +5,10 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { rootMetadata } from "@/lib/seo";
-import { getConfiguredLocaleChannelPairs } from "@/config/locale-channel";
+import { getStorefrontChannels } from "@/lib/channels/get-storefront-channels";
 import {
 	getDefaultLocaleSlug,
 	getDefaultTimeZone,
-	getStorefrontLocaleSlugs,
 	isStorefrontLocaleSlug,
 	resolveLocaleFromSlug,
 } from "@/config/locale";
@@ -42,14 +41,19 @@ export async function generateMetadata({
 	};
 }
 
-export function generateStaticParams() {
-	const pairs = getConfiguredLocaleChannelPairs();
-	if (pairs) {
-		const locales = [...new Set(pairs.map((pair) => pair.locale))];
-		return locales.map((locale) => ({ locale }));
+/**
+ * Prerender every market locale paired with a Saleor channel at build time. Pairs added later in
+ * the Dashboard are not missing — they render on first visit and are then cached.
+ */
+export async function generateStaticParams() {
+	const locales = [...new Set((await getStorefrontChannels()).flatMap((channel) => channel.locales))];
+	if (locales.length === 0) {
+		// Cache Components require at least one param; fail with the real cause instead.
+		throw new Error(
+			"[Channels] No storefront channels in Saleor. Add `storefront.locales` metadata to at least one active channel.",
+		);
 	}
-
-	return getStorefrontLocaleSlugs().map((locale) => ({ locale }));
+	return locales.map((locale) => ({ locale }));
 }
 
 /**

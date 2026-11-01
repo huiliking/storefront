@@ -25,7 +25,10 @@ describe("cache life floors", () => {
 	it("keeps catalog and menu backstops at an hour or more", () => {
 		expect(paperCacheLifeProfiles.catalog.revalidate).toBeGreaterThanOrEqual(3600);
 		expect(paperCacheLifeProfiles.menus.revalidate).toBeGreaterThanOrEqual(3600);
-		expect(paperCacheLifeProfiles.channels.revalidate).toBeGreaterThanOrEqual(86400);
+		// Channels are managed in Saleor (channel metadata) and drive routing, so their backstop is
+		// short: CHANNEL_* webhooks are primary, 15 min bounds a dropped webhook. One small shared
+		// query (~96 refreshes/day). Floor guards against an accidental per-minute setting.
+		expect(paperCacheLifeProfiles.channels.revalidate).toBeGreaterThanOrEqual(15 * 60);
 		for (const tier of Object.values(paperCacheLifeProfiles)) {
 			expect(tier.expire).toBeGreaterThan(tier.revalidate);
 			expect(tier.stale).toBeGreaterThan(0);
