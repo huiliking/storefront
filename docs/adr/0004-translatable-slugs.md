@@ -1,6 +1,6 @@
 # ADR 0004: Saleor translatable catalog slugs
 
-**Status:** Accepted (phases 1–2 shipped)  
+**Status:** Accepted (phases 1–2 shipped) — amended by [ADR 0008](./0008-saleor-owned-channels-and-display-language.md): URL slugs follow the **market** locale (`marketTranslation`), not the display language; the language picker no longer rewrites slugs  
 **Date:** 2026-07-21  
 **Deciders:** Paper storefront team  
 **Related:** [0001 Locale and channel URL routing](./0001-locale-channel-url-routing.md)
