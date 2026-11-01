@@ -7,17 +7,26 @@ import { CartDrawer } from "./cart-drawer";
 
 interface CartDrawerWrapperProps {
 	channel: string;
+	/** Market locale (URL) — links. */
 	localeSlug: string;
+	/** Display language — translated cart line names. */
+	displayLanguage: string;
 	cart: CartContent;
 	policies: StorefrontPolicies;
 }
 
-export async function CartDrawerWrapper({ channel, localeSlug, cart, policies }: CartDrawerWrapperProps) {
+export async function CartDrawerWrapper({
+	channel,
+	localeSlug,
+	displayLanguage,
+	cart,
+	policies,
+}: CartDrawerWrapperProps) {
 	await cookies();
 	await io();
 
 	const checkoutId = await Checkout.getIdFromCookies(channel);
-	const checkout = checkoutId ? await Checkout.find(checkoutId, localeSlug) : null;
+	const checkout = checkoutId ? await Checkout.find(checkoutId, displayLanguage) : null;
 
 	return (
 		<CartDrawer

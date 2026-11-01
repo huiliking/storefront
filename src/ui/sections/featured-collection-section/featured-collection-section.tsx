@@ -6,7 +6,10 @@ import { Section, type SectionTone, type SectionWidth } from "@/ui/sections/sect
 import { SectionHeader, type SectionHeaderCta } from "@/ui/sections/section-header";
 
 export interface FeaturedCollectionSectionProps {
+	/** Market locale (URL) — product links. */
 	locale: string;
+	/** Display language — product names, prices. */
+	displayLanguage?: string;
 	channel: string;
 	heading?: string;
 	eyebrow?: string;
@@ -23,6 +26,7 @@ export interface FeaturedCollectionSectionProps {
 
 export async function FeaturedCollectionSection({
 	locale,
+	displayLanguage = locale,
 	channel,
 	heading = "Featured products",
 	eyebrow,
@@ -35,8 +39,8 @@ export async function FeaturedCollectionSection({
 	width = "content",
 	className,
 }: FeaturedCollectionSectionProps) {
-	const products = (await getFeaturedProducts(channel, locale, limit, collectionSlug)).map((product) =>
-		toProductCardData(product, locale, channel),
+	const products = (await getFeaturedProducts(channel, locale, limit, collectionSlug, displayLanguage)).map(
+		(product) => toProductCardData(product, locale, channel, displayLanguage),
 	);
 	const headingId = "featured-collection-heading";
 

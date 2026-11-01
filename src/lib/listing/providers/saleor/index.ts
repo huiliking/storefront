@@ -7,7 +7,7 @@ import {
 	ProductListPaginatedDocument,
 	type ProductListItemFragment,
 } from "@/gql/graphql";
-import { graphqlLanguageCodeVariables } from "@/lib/graphql-locale";
+import { graphqlContentAndSlugVariables } from "@/lib/graphql-locale";
 import { CACHE_PROFILES, cachedQuery, liveQuery, type CacheProfile } from "@/lib/saleor";
 import { resolveCategorySlugsToIds } from "@/lib/catalog/resolve-category-slugs";
 import { isCacheableListingQuery } from "@/lib/listing/cacheability";
@@ -197,14 +197,16 @@ export function createSaleorListingProvider(
 					...(constraints.filter ? { filter: constraints.filter } : {}),
 					...(constraints.where ? { where: constraints.where } : {}),
 					...(search ? { search } : {}),
-					...graphqlLanguageCodeVariables(query.locale),
+					...graphqlContentAndSlugVariables(query.locale, query.displayLanguage ?? query.locale),
 				},
 			});
 
 			const connection = unwrap(kind, data);
 			if (!connection && kind !== "search") return null;
 			const edges = connection?.edges ?? [];
-			const items = edges.map((edge) => toProductCardData(edge.node, query.locale, query.channel));
+			const items = edges.map((edge) =>
+				toProductCardData(edge.node, query.locale, query.channel, query.displayLanguage),
+			);
 			const sorts = provider.capabilities.sorts[kind] ?? [];
 			return {
 				items,

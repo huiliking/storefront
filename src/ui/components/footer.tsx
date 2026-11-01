@@ -20,6 +20,7 @@ import { brandConfig } from "@/config/brand";
 import { Logo } from "./shared/logo";
 
 import { buildStorefrontPath } from "@/lib/storefront-path";
+import { getDisplayLanguage } from "@/lib/display-language-server";
 
 export async function Footer({ locale, channel }: { locale: string; channel: string }) {
 	const resolvedSlugs = needsAsyncChannelDiscovery()
@@ -27,9 +28,9 @@ export async function Footer({ locale, channel }: { locale: string; channel: str
 		: getStaticStorefrontChannelSlugs();
 
 	const [menuItems, channels, content] = await Promise.all([
-		getFooterMenuItems(channel, locale),
+		getFooterMenuItems(channel, locale, await getDisplayLanguage()),
 		shouldFetchChannelMetadata(resolvedSlugs) ? getCachedChannelsList() : Promise.resolve(null),
-		getStorefrontContent(channel, locale),
+		getStorefrontContent(channel, await getDisplayLanguage()),
 	]);
 
 	const footerMenuItems = menuItems ?? [];

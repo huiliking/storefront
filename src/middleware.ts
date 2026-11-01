@@ -1,6 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { isLocaleSlug, isStorefrontLocaleSlug } from "@/config/locale";
 import { BROWSE_LOCALE_COOKIE, getBrowseLocaleCookieOptions } from "@/lib/browse-locale";
+import {
+	DISPLAY_LANGUAGE_HEADER,
+	DISPLAY_LANGUAGE_PARAM,
+	resolveDisplayLanguage,
+} from "@/lib/display-language";
 
 const RESERVED_ROOT_SEGMENTS = new Set([
 	"api",
@@ -40,26 +45,33 @@ export function middleware(request: NextRequest) {
 	}
 
 	const segments = pathname.split("/").filter(Boolean);
-
-	// `/` is handled by `(root)/page.tsx`, which redirects to Saleor's default channel.
-	if (segments.length === 0) {
-		return NextResponse.next();
-	}
-
 	const [first, second] = segments;
 
-	if (RESERVED_ROOT_SEGMENTS.has(first)) {
+	if (first && RESERVED_ROOT_SEGMENTS.has(first)) {
 		return NextResponse.next();
 	}
 
-	// Channels and locale↔channel pairs are managed in Saleor, so this edge function holds no
-	// channel list and does no redirects. `[channel]/layout.tsx` validates `/{locale}/{channel}`
-	// against Saleor and renders not-found for anything else.
-	if (second && isLocaleSlug(first)) {
-		return withBrowseLocaleCookie(request, NextResponse.next(), first);
+	// Display language: layouts cannot read `?lang=`, so it is resolved once here and handed to
+	// layouts and pages as a request header. No cookie, no channel list, no redirects —
+	// `[channel]/layout.tsx` validates `/{locale}/{channel}` against Saleor.
+	const marketLocale = first && isLocaleSlug(first) ? first : null;
+	const displayLanguage = resolveDisplayLanguage({
+		lang: request.nextUrl.searchParams.get(DISPLAY_LANGUAGE_PARAM),
+		acceptLanguage: request.headers.get("accept-language"),
+		marketLocale,
+	});
+
+	const requestHeaders = new Headers(request.headers);
+	requestHeaders.set(DISPLAY_LANGUAGE_HEADER, displayLanguage);
+	// No `Vary: Accept-Language` needed: storefront HTML is per-request and sent as
+	// `Cache-Control: private, no-store`, so no shared cache stores one browser's language.
+	const response = NextResponse.next({ request: { headers: requestHeaders } });
+
+	if (second && marketLocale) {
+		return withBrowseLocaleCookie(request, response, marketLocale);
 	}
 
-	return NextResponse.next();
+	return response;
 }
 
 export const config = {

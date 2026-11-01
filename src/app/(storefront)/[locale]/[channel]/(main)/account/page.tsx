@@ -3,16 +3,17 @@ import { AccountOverviewWelcome } from "@/ui/components/account/account-overview
 import { AccountOverviewDefaultAddress } from "@/ui/components/account/account-overview-default-address";
 import { RecentOrdersSection } from "@/ui/components/account/recent-orders-section";
 import { RecentOrdersSectionSkeleton } from "@/ui/components/account/account-skeleton";
+import { getDisplayLanguage } from "@/lib/display-language-server";
 
-export default async function AccountOverviewPage({ params }: { params: Promise<{ locale: string }> }) {
-	const { locale } = await params;
+export default async function AccountOverviewPage() {
+	const displayLanguage = await getDisplayLanguage();
 
 	return (
 		<div className="space-y-8">
 			<AccountOverviewWelcome />
 
 			<Suspense fallback={<RecentOrdersSectionSkeleton />}>
-				<RecentOrdersSection localeSlug={locale} />
+				<RecentOrdersSection localeSlug={displayLanguage} />
 			</Suspense>
 
 			<AccountOverviewDefaultAddress />

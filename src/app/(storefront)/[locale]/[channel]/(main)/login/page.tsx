@@ -15,10 +15,10 @@ import { CurrentUserDocument } from "@/gql/graphql";
 import { fetchAuthenticatedUserIfSession } from "@/lib/auth/fetch-authenticated-user";
 import { resolveSessionUser } from "@/lib/auth/resolve-session-user";
 import { buildStorefrontPath } from "@/lib/storefront-path";
+import { getDisplayLanguage } from "@/lib/display-language-server";
 
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
-	const { locale } = await params;
-	const t = await getTranslations({ locale, namespace: "account.metadata" });
+export async function generateMetadata() {
+	const t = await getTranslations({ locale: await getDisplayLanguage(), namespace: "account.metadata" });
 	return {
 		title: t("loginTitle"),
 		description: t("loginDescription"),
@@ -103,7 +103,7 @@ async function LoginContent({ locale, channel }: { locale: string; channel: stri
 	}
 
 	if (auth.status === "unavailable") {
-		return <AccountUnavailable locale={locale} />;
+		return <AccountUnavailable locale={await getDisplayLanguage()} />;
 	}
 
 	return (

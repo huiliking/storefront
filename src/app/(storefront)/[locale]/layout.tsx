@@ -5,7 +5,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { rootMetadata } from "@/lib/seo";
-import { getStorefrontChannels } from "@/lib/channels/get-storefront-channels";
+import { getDisplayLanguage } from "@/lib/display-language-server";
 import {
 	getDefaultLocaleSlug,
 	getDefaultTimeZone,
@@ -42,25 +42,29 @@ export async function generateMetadata({
 }
 
 /**
- * Prerender every market locale paired with a Saleor channel at build time. Pairs added later in
- * the Dashboard are not missing — they render on first visit and are then cached.
+ * Storefront pages render per request — no build-time prerendering. Almost every page depends on
+ * the display language (`?lang=` / browser), and channels live in Saleor, so a build-time page set
+ * would be both incomplete and stale. Saleor data stays in the tagged data cache (`"use cache"`),
+ * cleared by webhooks, so per-request rendering does not mean per-request Saleor calls.
+ * No `generateStaticParams` in `[channel]`, and no Saleor read at build time.
  */
-export async function generateStaticParams() {
-	const locales = [...new Set((await getStorefrontChannels()).flatMap((channel) => channel.locales))];
-	if (locales.length === 0) {
-		// Cache Components require at least one param; fail with the real cause instead.
-		throw new Error(
-			"[Channels] No storefront channels in Saleor. Add `storefront.locales` metadata to at least one active channel.",
-		);
-	}
-	return locales.map((locale) => ({ locale }));
+export const instant = false;
+
+/**
+ * Framework requirement only: with Cache Components, every root param (`locale` — this is the
+ * root layout) needs at least one build-time value or the build fails. One code-defined seed,
+ * not a list of markets; all other locale/channel pairs come from Saleor at request time.
+ */
+export function generateStaticParams() {
+	return [{ locale: getDefaultLocaleSlug() }];
 }
 
 /**
- * Storefront root layout — renders `<html lang>` server-side from the URL locale segment.
+ * Storefront root layout — `<html lang>` and code-owned UI strings follow the **display language**
+ * (`?lang=` → browser → market locale, resolved by the middleware), not the URL market locale.
  *
- * Invalid locale slugs fall back to the default `htmlLang` here so the not-found boundary
- * still has an HTML shell; the actual `notFound()` for invalid pairs lives in `[channel]/layout`.
+ * The URL `[locale]` stays the market locale (links, slugs, hreflang); the actual `notFound()` for
+ * invalid pairs lives in `[channel]/layout`.
  */
 export default async function LocaleRootLayout({
 	children,
@@ -71,12 +75,11 @@ export default async function LocaleRootLayout({
 }) {
 	const { locale } = await params;
 	const localeSlug = isStorefrontLocaleSlug(locale) ? locale : getDefaultLocaleSlug();
-	const htmlLang = resolveLocaleFromSlug(localeSlug).htmlLang;
+	const displayLanguage = await getDisplayLanguage();
+	const htmlLang = resolveLocaleFromSlug(displayLanguage).htmlLang;
 
-	// Code-owned UI strings (next-intl). Locale comes from the URL segment (ADR 0001/0002),
-	// not next-intl routing. `setRequestLocale` seeds the request config from our param so
-	// message resolution stays static (no `headers()`) — preserves PPR / Cache Components.
-	setRequestLocale(localeSlug);
+	// next-intl gets the display language; every client `useTranslations` / `useLocale` follows it.
+	setRequestLocale(displayLanguage);
 	const messages = await getMessages();
 	const htmlProps = getRootHtmlFontProps(htmlLang);
 	const mediaOrigin = saleorMediaPreconnectOrigin();
@@ -87,7 +90,7 @@ export default async function LocaleRootLayout({
 			    preconnect would warm a connection the image load cannot reuse. */}
 			{mediaOrigin && <link rel="preconnect" href={mediaOrigin} />}
 			<body className="min-h-dvh font-sans">
-				<NextIntlClientProvider locale={localeSlug} messages={messages} timeZone={getDefaultTimeZone()}>
+				<NextIntlClientProvider locale={displayLanguage} messages={messages} timeZone={getDefaultTimeZone()}>
 					<PersistBrowseLocaleCookie locale={localeSlug} />
 					{children}
 					{/* Sampled — unsampled Speed Insights dominates the Vercel bill at scale. */}

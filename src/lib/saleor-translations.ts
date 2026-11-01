@@ -24,16 +24,18 @@ export function pickTranslatedName(entity: {
 }
 
 /**
- * Locale-canonical catalog URL slug. Keeps `entity.slug` (primary) untouched for
- * cache tags / webhooks — use this only when building browse paths.
+ * Market-canonical catalog URL slug: the translated slug in the **market locale** (URL), fetched
+ * as `marketTranslation`, else the primary slug. Deliberately not the display-language
+ * `translation` — the URL is the same for every viewer whatever `?lang=` or browser language.
+ * Keeps `entity.slug` (primary) untouched for cache tags / webhooks.
  *
  * @see docs/adr/0004-translatable-slugs.md
  */
 export function pickTranslatedSlug(entity: {
 	slug: string;
-	translation?: { slug?: string | null } | null;
+	marketTranslation?: { slug?: string | null } | null;
 }): string {
-	return pickTranslatedField(entity.translation, "slug", entity.slug) ?? entity.slug;
+	return pickTranslatedField(entity.marketTranslation, "slug", entity.slug) ?? entity.slug;
 }
 
 export function pickTranslatedTitle(entity: {

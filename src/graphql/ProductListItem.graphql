@@ -6,6 +6,9 @@ fragment ProductListItem on Product {
 	created
 	translation(languageCode: $languageCode) {
 		name
+	}
+	# URL slug follows the market locale (URL), not the display language.
+	marketTranslation: translation(languageCode: $marketLanguageCode) {
 		slug
 	}
 	pricing {
@@ -44,6 +47,9 @@ fragment ProductListItem on Product {
 		slug
 		translation(languageCode: $languageCode) {
 			name
+		}
+		# URL slug follows the market locale (URL), not the display language.
+		marketTranslation: translation(languageCode: $marketLanguageCode) {
 			slug
 		}
 		# Homepage category tiles — never full-bleed, so a smaller rung than the hero.

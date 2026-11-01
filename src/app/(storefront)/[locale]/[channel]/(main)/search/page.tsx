@@ -12,14 +12,12 @@ import { PlpListingClient } from "@/ui/components/plp";
 import { buttonClassName } from "@/ui/components/ui/button";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { buildStorefrontPath } from "@/lib/storefront-path";
+import { getDisplayLanguage } from "@/lib/display-language-server";
 
 // Prefetch: default (auto). Search is reached via form submit, not `prefetch={true}` links.
 
-export async function generateMetadata(props: {
-	params: Promise<{ locale: string; channel: string }>;
-}): Promise<Metadata> {
-	const params = await props.params;
-	const t = await getTranslations({ locale: params.locale, namespace: "search" });
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations({ locale: await getDisplayLanguage(), namespace: "search" });
 
 	return {
 		title: t("title"),
@@ -53,7 +51,7 @@ async function SearchContent({
 	params: Promise<{ locale: string; channel: string }>;
 }) {
 	const [searchParams, params] = await Promise.all([searchParamsPromise, paramsPromise]);
-	const t = await getTranslations({ locale: params.locale, namespace: "search" });
+	const t = await getTranslations({ locale: await getDisplayLanguage(), namespace: "search" });
 	const queryParam = searchParams.query;
 	if (!queryParam) notFound();
 	const query = Array.isArray(queryParam) ? queryParam.find((value) => value.length > 0) : queryParam;
@@ -78,6 +76,7 @@ async function SearchContent({
 	const payload = await loadListingView({
 		surface: "search",
 		locale: params.locale,
+		displayLanguage: await getDisplayLanguage(),
 		channel: params.channel,
 		view,
 	});

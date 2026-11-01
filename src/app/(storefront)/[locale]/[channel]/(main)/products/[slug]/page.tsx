@@ -33,6 +33,7 @@ import {
 	VariantSectionError,
 	getDefaultGalleryImages,
 } from "@/ui/components/pdp";
+import { getDisplayLanguage } from "@/lib/display-language-server";
 
 // Prefetch: default (auto). With global `partialPrefetching`, product-card links prefetch only
 // the App Shell. Do not use `prefetch={true}` on PLP cards — a per-link runtime prefetch would
@@ -46,7 +47,12 @@ export async function generateMetadata(props: {
 	params: Promise<{ locale: string; slug: string; channel: string }>;
 }): Promise<Metadata> {
 	const params = await props.params;
-	const product = await getProductData(params.slug, params.channel, params.locale);
+	const product = await getProductData(
+		params.slug,
+		params.channel,
+		params.locale,
+		await getDisplayLanguage(),
+	);
 
 	if (!product) {
 		return { title: "Product Not Found" };
@@ -113,15 +119,16 @@ async function ProductShell({
 	searchParams: Promise<{ variant?: string; sku?: string }>;
 }) {
 	const params = await paramsPromise;
+	const displayLanguage = await getDisplayLanguage();
 	const browse = (suffix: string) => buildStorefrontPath(params.locale, params.channel, suffix);
 	const [product, tPdp, tNav, content, currency] = await Promise.all([
-		getProductData(params.slug, params.channel, params.locale),
-		getTranslations({ locale: params.locale, namespace: "pdp" }),
-		getTranslations({ locale: params.locale, namespace: "nav" }),
-		getStorefrontContent(params.channel, params.locale),
+		getProductData(params.slug, params.channel, params.locale, await getDisplayLanguage()),
+		getTranslations({ locale: await getDisplayLanguage(), namespace: "pdp" }),
+		getTranslations({ locale: await getDisplayLanguage(), namespace: "nav" }),
+		getStorefrontContent(params.channel, await getDisplayLanguage()),
 		resolveChannelCurrency(params.channel),
 	]);
-	const intlLocale = resolveLocaleFromSlug(params.locale).bcp47;
+	const intlLocale = resolveLocaleFromSlug(await getDisplayLanguage()).bcp47;
 	const policyLabels = buildPolicyLabelValues(content.policies, {
 		currency,
 		locale: intlLocale,
@@ -242,7 +249,7 @@ async function ProductShell({
 							<VariantGalleryDynamic
 								product={product}
 								channel={params.channel}
-								localeSlug={params.locale}
+								displayLanguage={displayLanguage}
 								searchParams={searchParams}
 							/>
 						</Suspense>
@@ -254,6 +261,7 @@ async function ProductShell({
 									product={product}
 									channel={params.channel}
 									localeSlug={params.locale}
+									displayLanguage={displayLanguage}
 									searchParams={searchParams}
 								/>
 							</Suspense>

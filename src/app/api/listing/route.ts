@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
-import { isStorefrontLocaleSlug } from "@/config/locale";
-import { getStorefrontChannelSlugs } from "@/lib/channel-slugs";
+import { getStorefrontChannels } from "@/lib/channels/get-storefront-channels";
+import { isMarketPair } from "@/lib/channels/storefront-channels";
+import { DISPLAY_LANGUAGE_PARAM, matchDisplayLanguage } from "@/lib/display-language";
+import { getStorefrontLocaleSlugs } from "@/config/locale";
 import { listingViewFromSearchParams, type ListingSurface } from "@/lib/catalog/listing-query";
 import { loadListingView } from "@/lib/listing/load";
 
@@ -28,14 +30,15 @@ export async function GET(request: NextRequest) {
 	if (!surface) {
 		return Response.json({ error: "Invalid surface" }, { status: 400 });
 	}
-	if (!isStorefrontLocaleSlug(locale)) {
-		return Response.json({ error: "Invalid locale" }, { status: 400 });
+	// `locale` is the market locale from the page URL; it must be paired with the channel in Saleor.
+	if (!isMarketPair(await getStorefrontChannels(), locale, channel)) {
+		return Response.json({ error: "Invalid locale or channel" }, { status: 400 });
 	}
-
-	const channels = await getStorefrontChannelSlugs();
-	if (!channels.includes(channel)) {
-		return Response.json({ error: "Invalid channel" }, { status: 400 });
-	}
+	// Display language comes as `lang` (the middleware does not run on `/api`); default: market locale.
+	const displayLanguage =
+		matchDisplayLanguage(url.searchParams.get(DISPLAY_LANGUAGE_PARAM), getStorefrontLocaleSlugs()) ??
+		matchDisplayLanguage(locale, getStorefrontLocaleSlugs()) ??
+		undefined;
 	if (surface !== "all" && surface !== "search" && !slug) {
 		return Response.json({ error: "Missing slug" }, { status: 400 });
 	}
@@ -43,6 +46,7 @@ export async function GET(request: NextRequest) {
 	const payload = await loadListingView({
 		surface,
 		locale,
+		displayLanguage,
 		channel,
 		slug,
 		view: listingViewFromSearchParams(url.searchParams),

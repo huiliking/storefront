@@ -13,6 +13,7 @@ import { OrderTimeline } from "@/ui/components/account/order-timeline";
 import { OrderStatusBadge } from "@/ui/components/account/order-status-badge";
 import { AccountOrderDetailSkeleton } from "@/ui/components/account/account-skeleton";
 import { type AddressDetailsFragment } from "@/gql/graphql";
+import { getDisplayLanguage } from "@/lib/display-language-server";
 
 type Props = {
 	params: Promise<{ locale: string; number: string }>;
@@ -27,17 +28,18 @@ export default function OrderDetailPage({ params }: Props) {
 }
 
 async function OrderDetailContent({ params }: Props) {
-	const { number, locale } = await params;
-	const intlLocale = resolveLocaleFromSlug(locale).bcp47;
-	const t = await getTranslations({ locale, namespace: "account.orderDetail" });
-	const tCommon = await getTranslations({ locale, namespace: "account.common" });
-	const tOrders = await getTranslations({ locale, namespace: "account.orders" });
+	const { number } = await params;
+	const displayLanguage = await getDisplayLanguage();
+	const intlLocale = resolveLocaleFromSlug(displayLanguage).bcp47;
+	const t = await getTranslations({ locale: displayLanguage, namespace: "account.orderDetail" });
+	const tCommon = await getTranslations({ locale: displayLanguage, namespace: "account.common" });
+	const tOrders = await getTranslations({ locale: displayLanguage, namespace: "account.orders" });
 
 	if (!(await hasAuthSession())) {
 		return <p className="text-sm text-muted-foreground">{t("signInRequired")}</p>;
 	}
 
-	const result = await getOrdersForNumberLookup(locale);
+	const result = await getOrdersForNumberLookup(displayLanguage);
 
 	if (!result.ok) {
 		return <p className="text-sm text-muted-foreground">{t("loadFailed")}</p>;
@@ -64,7 +66,11 @@ async function OrderDetailContent({ params }: Props) {
 					<h1 className="text-balance text-h1">{tOrders("orderNumber", { number: order.number })}</h1>
 					<p className="mt-1 text-sm text-muted-foreground">{t("placedOn", { date: placedDate })}</p>
 				</div>
-				<OrderStatusBadge status={order.status} statusDisplay={order.statusDisplay} localeSlug={locale} />
+				<OrderStatusBadge
+					status={order.status}
+					statusDisplay={order.statusDisplay}
+					localeSlug={displayLanguage}
+				/>
 			</div>
 
 			<div className="grid gap-6 lg:grid-cols-[1fr_320px]">
@@ -159,7 +165,7 @@ async function OrderDetailContent({ params }: Props) {
 						</div>
 					</div>
 
-					<OrderTimeline order={order} localeSlug={locale} />
+					<OrderTimeline order={order} localeSlug={displayLanguage} />
 				</div>
 
 				<div className="space-y-4">

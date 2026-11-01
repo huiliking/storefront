@@ -13,7 +13,7 @@ describe("redirectToCanonicalCatalogSlug", () => {
 			channel: "pl",
 			urlSlug: "bluza",
 			kind: "products",
-			entity: { slug: "hoodie", translation: { slug: "bluza" } },
+			entity: { slug: "hoodie", marketTranslation: { slug: "bluza" } },
 		});
 
 		expect(permanentRedirect).not.toHaveBeenCalled();
@@ -25,10 +25,23 @@ describe("redirectToCanonicalCatalogSlug", () => {
 			channel: "pl",
 			urlSlug: "hoodie",
 			kind: "products",
-			entity: { slug: "hoodie", translation: { slug: "bluza" } },
+			entity: { slug: "hoodie", marketTranslation: { slug: "bluza" } },
 			searchParams: { variant: "abc", sort: "price" },
 		});
 
 		expect(permanentRedirect).toHaveBeenCalledWith("/pl/pl/products/bluza?variant=abc&sort=price");
+	});
+
+	it("keeps the display-language choice (?lang=) on redirect — the slug itself stays market-locale", () => {
+		redirectToCanonicalCatalogSlug({
+			locale: "pl",
+			channel: "pl",
+			urlSlug: "hoodie",
+			kind: "products",
+			entity: { slug: "hoodie", marketTranslation: { slug: "bluza" } },
+			searchParams: { lang: "en" },
+		});
+
+		expect(permanentRedirect).toHaveBeenCalledWith("/pl/pl/products/bluza?lang=en");
 	});
 });

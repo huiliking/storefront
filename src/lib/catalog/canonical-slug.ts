@@ -7,10 +7,10 @@ export type { CatalogSlugKind };
 
 type SluggedEntity = {
 	slug: string;
-	translation?: { slug?: string | null } | null;
+	marketTranslation?: { slug?: string | null } | null;
 };
 
-/** Path suffix using the locale-canonical catalog slug (`translation.slug ?? slug`). */
+/** Path suffix using the market-canonical catalog slug (`marketTranslation.slug ?? slug`). */
 export function catalogPathSuffix(kind: CatalogSlugKind, entity: SluggedEntity): string {
 	return `/${kind}/${encodeURIComponent(pickTranslatedSlug(entity))}`;
 }

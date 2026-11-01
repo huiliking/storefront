@@ -16,6 +16,7 @@ import { ImageWithText } from "@/ui/sections/image-with-text/image-with-text";
 import { MediaHero } from "@/ui/sections/media-hero/media-hero";
 import { MulticolumnSection } from "@/ui/sections/multicolumn-section/multicolumn-section";
 import { RichTextBlock } from "@/ui/sections/rich-text-block/rich-text-block";
+import { getDisplayLanguage } from "@/lib/display-language-server";
 
 export const metadata = {
 	description: brandConfig.description,
@@ -106,7 +107,7 @@ function HomePageFallback() {
  */
 async function HomePageContent({ params }: { params: HomeParams }) {
 	const { locale, channel } = await params;
-	const content = await getStorefrontContent(channel, locale);
+	const content = await getStorefrontContent(channel, await getDisplayLanguage());
 	const { hero, featuredCollection, categories, brandStory, values, editorial } = content.surfaces.homepage;
 
 	// Source real product imagery from the same cached collection the featured
@@ -116,6 +117,7 @@ async function HomePageContent({ params }: { params: HomeParams }) {
 		locale,
 		featuredCollection.limit,
 		featuredCollection.collectionSlug,
+		await getDisplayLanguage(),
 	);
 	const heroProduct = products[0];
 	const heroImage = pickImage(heroProduct);
@@ -128,7 +130,7 @@ async function HomePageContent({ params }: { params: HomeParams }) {
 	const currency = await resolveChannelCurrency(channel);
 	const policyValues = buildPolicyLabelValues(content.policies, {
 		currency,
-		locale: resolveLocaleFromSlug(locale).bcp47,
+		locale: resolveLocaleFromSlug(await getDisplayLanguage()).bcp47,
 	});
 	const valueColumns = values.columns.map((column) => ({
 		...column,
@@ -166,6 +168,7 @@ async function HomePageContent({ params }: { params: HomeParams }) {
 			{/* Cached collection — resolves with the rest of the body inside Suspense. */}
 			<FeaturedCollectionSection
 				locale={locale}
+				displayLanguage={await getDisplayLanguage()}
 				channel={channel}
 				heading={featuredCollection.heading}
 				collectionSlug={featuredCollection.collectionSlug}

@@ -67,6 +67,8 @@ export function toProductCardData(
 	product: ProductListItemFragment,
 	locale: string,
 	channel: string,
+	/** Price formatting; `locale` (market) drives the link slug. */
+	displayLanguage: string = locale,
 ): ProductCardView {
 	const startPrice = product.pricing?.priceRange?.start?.gross;
 	const stopPrice = product.pricing?.priceRange?.stop?.gross;
@@ -106,7 +108,7 @@ export function toProductCardData(
 		]),
 		imageAlt: product.thumbnail?.alt ?? productName,
 		hoverImage: null,
-		localeBcp47: resolveLocaleFromSlug(locale).bcp47,
+		localeBcp47: resolveLocaleFromSlug(displayLanguage).bcp47,
 		href: buildStorefrontPath(locale, channel, `/products/${pickTranslatedSlug(product)}`),
 		badge: isSale ? "Sale" : null,
 		isBestseller: isBestseller(product),

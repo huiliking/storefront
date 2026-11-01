@@ -17,7 +17,7 @@ import {
 import { resolveByPossiblyTranslatedSlug } from "@/lib/catalog/resolve-by-slug";
 import { tagPrimaryCatalogSlug } from "@/lib/catalog/tag-primary-slug";
 import { CACHE_PROFILES, cachedQuery } from "@/lib/saleor";
-import { graphqlLanguageCodeVariables } from "@/lib/graphql-locale";
+import { graphqlContentAndSlugVariables, graphqlLanguageCodeVariables } from "@/lib/graphql-locale";
 import { pickTranslatedName, withTranslatedProductFields } from "@/lib/saleor-translations";
 
 export type ProductShell = NonNullable<ProductDetailsQuery["product"]>;
@@ -49,10 +49,12 @@ export async function getProductData(
 	slug: string,
 	channel: string,
 	localeSlug: string,
+	displayLanguage: string = localeSlug,
 ): Promise<ProductShell | null> {
 	"use cache";
 	const decodedSlug = decodeURIComponent(slug);
-	const languageVariables = graphqlLanguageCodeVariables(localeSlug);
+	// URL slug lookup follows the market locale (`localeSlug`); content follows the display language.
+	const languageVariables = graphqlContentAndSlugVariables(localeSlug, displayLanguage);
 
 	const fetchProduct = async (vars: { slug: string; slugLanguageCode?: LanguageCodeEnum }) => {
 		const data = await cachedQuery(ProductDetailsDocument, {

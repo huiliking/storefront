@@ -27,6 +27,7 @@ function selectionValues(raw: string | string[] | undefined): string[] {
 export function listingQueryFromInput(input: {
 	surface: ListingSurface;
 	locale: string;
+	displayLanguage?: string;
 	channel: string;
 	slug?: string;
 	view: ListingViewParams;
@@ -82,6 +83,7 @@ export function listingQueryFromInput(input: {
 		surface,
 		channel: input.channel,
 		locale: input.locale,
+		displayLanguage: input.displayLanguage ?? input.locale,
 		selections,
 		range,
 		sort: canonicalSortId(typeof view.sort === "string" ? view.sort : undefined),

@@ -11,6 +11,9 @@ fragment MenuItem on MenuItem {
 		name
 		translation(languageCode: $languageCode) {
 			name
+		}
+		# URL slug follows the market locale (URL), not the display language.
+		marketTranslation: translation(languageCode: $marketLanguageCode) {
 			slug
 		}
 	}
@@ -20,6 +23,9 @@ fragment MenuItem on MenuItem {
 		slug
 		translation(languageCode: $languageCode) {
 			name
+		}
+		# URL slug follows the market locale (URL), not the display language.
+		marketTranslation: translation(languageCode: $marketLanguageCode) {
 			slug
 		}
 	}
@@ -29,13 +35,21 @@ fragment MenuItem on MenuItem {
 		slug
 		translation(languageCode: $languageCode) {
 			title
+		}
+		# URL slug follows the market locale (URL), not the display language.
+		marketTranslation: translation(languageCode: $marketLanguageCode) {
 			slug
 		}
 	}
 	url
 }
 
-query MenuGetBySlug($slug: String!, $channel: String!, $languageCode: LanguageCodeEnum!) {
+query MenuGetBySlug(
+	$slug: String!
+	$channel: String!
+	$languageCode: LanguageCodeEnum!
+	$marketLanguageCode: LanguageCodeEnum!
+) {
 	menu(slug: $slug, channel: $channel) {
 		items {
 			...MenuItem

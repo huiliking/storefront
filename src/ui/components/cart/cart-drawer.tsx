@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
@@ -140,7 +140,8 @@ export function CartDrawer({
 	const itemCount = lines.reduce((sum, line) => sum + line.quantity, 0);
 	const subtotal = totalPrice?.gross.amount ?? 0;
 	const currency = totalPrice?.gross.currency ?? localeConfig.fallbackCurrency;
-	const intlLocale = resolveLocaleFromSlug(localeSlug).bcp47;
+	// Display language for formatting; `localeSlug` (market) stays for links.
+	const intlLocale = resolveLocaleFromSlug(useLocale()).bcp47;
 
 	const runCartMutation = (mutation: () => Promise<void>) => {
 		setIsCartBusy(true);

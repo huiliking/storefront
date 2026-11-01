@@ -4,17 +4,6 @@ import { getStorefrontChannels } from "@/lib/channels/get-storefront-channels";
 import { isMarketPair } from "@/lib/channels/storefront-channels";
 
 /**
- * Prerender the channels Saleor pairs with this locale at build time. Channels or pairs added
- * later in the Dashboard render on first visit and are then cached — no rebuild needed.
- */
-export const generateStaticParams = async ({ params }: { params: { locale: string } }) => {
-	const channels = (await getStorefrontChannels()).filter((channel) =>
-		channel.locales.some((slug) => slug === params.locale),
-	);
-	return channels.map((channel) => ({ channel: channel.slug }));
-};
-
-/**
  * Validate the locale↔channel pair against Saleor, then render children.
  *
  * Valid only when the channel is active, opted in (`storefront.locales` metadata), and lists

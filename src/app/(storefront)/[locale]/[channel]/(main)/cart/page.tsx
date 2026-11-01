@@ -13,14 +13,15 @@ import { buildBrowsePageMetadata } from "@/lib/seo";
 import { resolveLocaleFromSlug } from "@/config/locale";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { buttonClassName } from "@/ui/components/ui/button";
+import { getDisplayLanguage } from "@/lib/display-language-server";
 
 export async function generateMetadata(props: {
 	params: Promise<{ locale: string; channel: string }>;
 }): Promise<Metadata> {
 	const params = await props.params;
 	const [{ surfaces }, t] = await Promise.all([
-		getStorefrontContent(params.channel, params.locale),
-		getTranslations({ locale: params.locale, namespace: "cart.page" }),
+		getStorefrontContent(params.channel, await getDisplayLanguage()),
+		getTranslations({ locale: await getDisplayLanguage(), namespace: "cart.page" }),
 	]);
 
 	return buildBrowsePageMetadata({
@@ -49,13 +50,13 @@ async function CartContent({
 }) {
 	const params = await paramsPromise;
 	const [{ surfaces }, checkoutId, t] = await Promise.all([
-		getStorefrontContent(params.channel, params.locale),
+		getStorefrontContent(params.channel, await getDisplayLanguage()),
 		Checkout.getIdFromCookies(params.channel),
-		getTranslations({ locale: params.locale, namespace: "cart.page" }),
+		getTranslations({ locale: await getDisplayLanguage(), namespace: "cart.page" }),
 	]);
 	const cart = surfaces.cart;
-	const intlLocale = resolveLocaleFromSlug(params.locale).bcp47;
-	const checkout = checkoutId ? await Checkout.find(checkoutId, params.locale) : null;
+	const intlLocale = resolveLocaleFromSlug(await getDisplayLanguage()).bcp47;
+	const checkout = checkoutId ? await Checkout.find(checkoutId, await getDisplayLanguage()) : null;
 
 	if (!checkout || checkout.lines.length < 1) {
 		return (
