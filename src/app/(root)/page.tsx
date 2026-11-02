@@ -8,7 +8,11 @@ import { buildStorefrontPath } from "@/lib/storefront-path";
  *
  * The default channel is the one with `storefront.default = true` in its metadata (Dashboard →
  * Channels → channel → metadata), else the first storefront channel. No `.env` setting.
+ *
+ * Deliberately does not carry `?lang=`: reading the request would turn this static 307 into a
+ * streamed redirect (HTTP 200). Internal links never point at `/`, so the choice is not lost there.
  */
+
 export default async function RootPage() {
 	const channel = getDefaultStorefrontChannel(await getStorefrontChannels());
 

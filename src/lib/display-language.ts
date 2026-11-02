@@ -23,6 +23,9 @@ export const DISPLAY_LANGUAGE_PARAM = "lang";
 /** Request header the middleware sets with the resolved display language for layouts and pages. */
 export const DISPLAY_LANGUAGE_HEADER = "x-display-language";
 
+/** Request header with the explicit `?lang=` choice (validated), absent when the language was inferred. */
+export const DISPLAY_LANGUAGE_EXPLICIT_HEADER = "x-display-language-explicit";
+
 /** Browser tags whose primary subtag differs from our slug. */
 const LANGUAGE_ALIASES: Record<string, string> = { no: "nb" };
 

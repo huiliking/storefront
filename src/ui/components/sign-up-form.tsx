@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import Link from "@/ui/atoms/storefront-link";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
@@ -138,7 +138,7 @@ export function SignUpForm() {
 
 				<form onSubmit={handleSubmit} className="space-y-4">
 					{error && (
-						<div role="alert" className="bg-destructive/10 rounded-md p-3 text-sm text-destructive">
+						<div role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
 							{error}
 						</div>
 					)}

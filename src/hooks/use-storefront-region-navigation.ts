@@ -16,6 +16,7 @@ import {
 	parseStorefrontPathname,
 	replaceStorefrontChannel,
 } from "@/lib/storefront-path";
+import { withCurrentDisplayLanguage } from "@/lib/display-language-link";
 
 /**
  * Navigate browse URLs while preserving the path suffix (ADR 0001).
@@ -60,7 +61,7 @@ export function useStorefrontRegionNavigation() {
 
 		// Drop query when we abandoned a detail URL (listing/home has no variant/filters meaning).
 		const keepQuery = Boolean(catalogIdentity) || suffix === (parsed?.suffix ?? "");
-		router.push(appendSearchParams(path, keepQuery ? searchParams : undefined));
+		router.push(withCurrentDisplayLanguage(appendSearchParams(path, keepQuery ? searchParams : undefined)));
 	}
 
 	/**
@@ -79,7 +80,7 @@ export function useStorefrontRegionNavigation() {
 		}
 
 		if (targetLocale && targetLocale !== locale) {
-			router.push(buildStorefrontPath(targetLocale, newChannel));
+			router.push(withCurrentDisplayLanguage(buildStorefrontPath(targetLocale, newChannel)));
 			return;
 		}
 

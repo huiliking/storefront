@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/ui/atoms/storefront-link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ariaDisabledClassName, buttonClassName } from "@/ui/components/ui/button";

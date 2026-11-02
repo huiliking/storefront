@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/ui/atoms/storefront-link";
 import { Search, Home, ArrowLeft } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useStorefrontHref } from "@/hooks/use-storefront-href";

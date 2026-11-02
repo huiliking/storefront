@@ -1,6 +1,6 @@
 # ADR 0008: Saleor-owned channels, market locale vs display language
 
-**Status:** Accepted — Phase 1 steps 1–4.4 implemented; steps 5–6 pending; Phase 2 proposed  
+**Status:** Accepted — Phase 1 steps 1–5 implemented; step 6 pending; Phase 2 proposed  
 **Date:** 2026-11-01  
 **Deciders:** huiliking (localization audit, fork `huiliking/storefront`)  
 **Amends:** [0001 Locale and channel URL routing](./0001-locale-channel-url-routing.md), [0004 Saleor translatable catalog slugs](./0004-translatable-slugs.md)  
@@ -105,16 +105,36 @@ calls (measured: product list ~0.02–0.06 s to first byte). `cacheComponents` s
 The root `[locale]` segment keeps one **code-defined** seed (`generateStaticParams` → default locale) because Cache
 Components requires a build-time value for every root param; the build reads nothing from Saleor.
 
-### 6. Header layout (step 5, pending)
+### 6. Header layout and carrying `?lang=` (step 5)
 
-Two separate controls, Amazon-style: **market selector on the left** (channel + its locale; changes the URL path;
-options from Saleor) and **language picker in the right corner** (storefront display languages; sets `?lang=` only;
-never changes channel, URL locale or prices). Replaces the combined footer "Language and market" picker.
+Two separate controls, Amazon-style, replacing the combined footer "Language and market" picker:
+
+- **Market selector, left** (next to the logo; `src/ui/components/market-selector.tsx`): Saleor channels
+  grouped with their paired market locales (each labelled in its own language). Choosing one changes the URL
+  path `/{locale}/{channel}`: same channel → locale switch (slug rewrite); other channel → keeps the path when the
+  locale stays the same, else enters that market's home. Below `xl` only the currency shows, to fit the nav.
+- **Language picker, right** (before account/cart; `src/ui/components/language-picker.tsx`): storefront display
+  languages. Sets `?lang=` on the current URL only — never the path, channel, prices or document language. It
+  does a **full page load** on purpose: layouts (`<html lang>`, next-intl messages) persist across client
+  navigation, so a soft navigation would leave the chrome in the old language.
+- **Mobile:** both controls sit in the mobile menu.
+
+**Carrying `?lang=`** (the choice lives only in the URL — no cookie):
+
+- The middleware also sets `x-display-language-explicit` when `?lang=` is valid; the root layout passes it to an
+  `ExplicitDisplayLanguageProvider` context.
+- `StorefrontLink` (`src/ui/atoms/storefront-link.tsx`) is a drop-in for `next/link` that appends `?lang=`;
+  `LinkWithChannel`, `StorefrontHardLink` and 14 files that imported `next/link` use it.
+- Programmatic navigations use `useWithDisplayLanguage()` (components) or `withCurrentDisplayLanguage()` (plain
+  client helpers: auth, logout, mega menu, region navigation); server redirects (login, signup, orders, search
+  form and page) use `storefrontHrefWithLanguage()`. Pure helper: `withDisplayLanguage()` in
+  `src/lib/display-language-link.ts`.
+- **Limitation:** `/` does not carry `?lang=`. Reading the request there turns its static 307 into a streamed
+  redirect (HTTP 200); internal links never point at `/`, so the choice is not lost in practice.
 
 ## Pruned code and configuration
 
-Status after step 4.4 (prune). "Pending" items are scheduled for step 5 (header) or step 6 (checkout/account
-language, env, docs). The browse-locale cookie and `DefaultChannelSlug` moved from 4.4 to step 6 because checkout
+Status after step 5 (header). "Pending" items are scheduled for step 6 (checkout/account language, env, docs). The browse-locale cookie and `DefaultChannelSlug` moved from 4.4 to step 6 because checkout
 still depends on them; the hreflang rewrite moved from step 6 into 4.4 because deleting the matrix required it.
 
 | #   | Code / config                                                                                                                                                                                                    | Why it goes                                                                                                                                         | Status                                                                                                                                                                                                                           |
@@ -130,7 +150,7 @@ still depends on them; the hreflang rewrite moved from step 6 into 4.4 because d
 | 9   | `DefaultChannelSlug` in `src/app/config.ts` and the Dockerfile `NEXT_PUBLIC_DEFAULT_CHANNEL` default; users: checkout session loader, checkout root views, not-found content                                     | Default channel = `storefront.default` in Saleor                                                                                                    | Pending (step 6) — moved from 4.4: only checkout and the not-found page still use it                                                                                                                                             |
 | 10  | `getPairedChannelForLocale` and the "switch market?" prompt on language change (`use-storefront-region-navigation.ts`)                                                                                           | A language change never moves the channel (fixes L3)                                                                                                | **Done** (4.4) — language switch keeps the channel; market switch enters at the target's default locale when the current locale is not paired there                                                                              |
 | 11  | Dead UI `src/ui/components/locale-select.tsx` (audit A3) and `src/ui/components/channel-select.tsx`                                                                                                              | Not imported anywhere                                                                                                                               | **Done** (4.4) — both deleted                                                                                                                                                                                                    |
-| 12  | Combined `storefront-region-picker.tsx`                                                                                                                                                                          | Replaced by separate market selector and language picker                                                                                            | Pending (step 5) — interim: languages and markets come from Saleor; market section shown without a token check (fixes CH3)                                                                                                       |
+| 12  | Combined `storefront-region-picker.tsx`                                                                                                                                                                          | Replaced by separate market selector and language picker                                                                                            | **Done** (5) — deleted with `src/lib/market-display.ts`; header market selector + language picker replace it                                                                                                                     |
 | 13  | hreflang "language-only when no matrix" branch in `src/lib/seo/hreflang.ts`                                                                                                                                      | Pairs always exist; alternates are always region-aware                                                                                              | **Done** (4.4) — pulled forward: hreflang and `og:locale:alternate` built from Saleor pairs; `buildBrowsePageMetadata` is async                                                                                                  |
 | 14  | `NEXT_PUBLIC_STOREFRONT_LOCALES` / `NEXT_PUBLIC_DEFAULT_LOCALE` as a URL allowlist                                                                                                                               | Becomes a server-only display-language list (`STOREFRONT_DISPLAY_LANGUAGES`); URL locales are validated against `LOCALE_DEFINITIONS` + Saleor pairs | Pending (step 6)                                                                                                                                                                                                                 |
 | 15  | Env removed after Phase 1: `STOREFRONT_CHANNELS`, `STOREFRONT_DISCOVER_CHANNELS`, `NEXT_PUBLIC_STOREFRONT_LOCALE_CHANNELS`, `NEXT_PUBLIC_DEFAULT_CHANNEL`                                                        | Channel data is Saleor's                                                                                                                            | Partly done (4.4) — `STOREFRONT_CHANNELS`, `STOREFRONT_DISCOVER_CHANNELS`, `NEXT_PUBLIC_STOREFRONT_LOCALE_CHANNELS` no longer read and removed from `.env.example`; `NEXT_PUBLIC_DEFAULT_CHANNEL` kept for checkout until step 6 |

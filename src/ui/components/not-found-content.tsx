@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/ui/atoms/storefront-link";
 import { Search, Home } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { DefaultChannelSlug } from "@/app/config";

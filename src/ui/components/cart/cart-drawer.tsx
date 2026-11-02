@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/ui/atoms/storefront-link";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, Truck, RotateCcw } from "lucide-react";
 import { Button, buttonClassName } from "@/ui/components/ui/button";

@@ -5,6 +5,7 @@ import type { useRouter } from "next/navigation";
 import { resolveBrowseLocaleSlugWithFallback } from "@/lib/browse-locale";
 import { bumpChromeVersion } from "@/lib/chrome-sync";
 import { buildStorefrontPath } from "@/lib/storefront-path";
+import { withCurrentDisplayLanguage } from "@/lib/display-language-link";
 
 type Router = ReturnType<typeof useRouter>;
 
@@ -38,7 +39,7 @@ export async function syncAuthSurfacesAfterSignIn(
 	if (options?.redirectTo) {
 		// Hard navigation: avoids router.refresh() racing on the login page and guarantees
 		// cookies are picked up on the destination.
-		window.location.assign(options.redirectTo);
+		window.location.assign(withCurrentDisplayLanguage(options.redirectTo));
 		return;
 	}
 
@@ -59,5 +60,5 @@ export function navigateToStorefrontHome(channel: string, locale?: string) {
 	}
 
 	const resolvedLocale = resolveBrowseLocaleSlugWithFallback(locale);
-	window.location.assign(buildStorefrontPath(resolvedLocale, channel));
+	window.location.assign(withCurrentDisplayLanguage(buildStorefrontPath(resolvedLocale, channel)));
 }

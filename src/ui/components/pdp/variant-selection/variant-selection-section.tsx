@@ -18,6 +18,7 @@ import {
 import { defaultRenderers } from "./renderers";
 import type { RendererRegistry } from "./types";
 import { VariantAttributeBadges, extractOptionalAttributes } from "./optional-attributes";
+import { useWithDisplayLanguage } from "@/ui/atoms/display-language-context";
 
 /**
  * Main container for variant selection with multiple attributes.
@@ -58,6 +59,8 @@ export function VariantSelectionSection({
 	children,
 }: VariantSelectionSectionProps) {
 	const router = useRouter();
+	// Variant URLs are rebuilt from scratch — keep the explicit `?lang=` choice.
+	const withLang = useWithDisplayLanguage();
 	const { locale } = useParams<{ locale: string; channel: string }>();
 	const searchParams = useSearchParams();
 	const [isPending, startTransition] = useTransition();
@@ -118,9 +121,9 @@ export function VariantSelectionSection({
 
 		startTransition(() => {
 			const path = `${buildStorefrontPath(locale, channel, `/products/${productSlug}`)}?${params.toString()}`;
-			router.replace(path, { scroll: false });
+			router.replace(withLang(path), { scroll: false });
 		});
-	}, [channel, currentSelections, locale, productSlug, router, searchParams, selectionIndex]);
+	}, [channel, currentSelections, locale, productSlug, router, searchParams, selectionIndex, withLang]);
 
 	const optionalAttributes = useMemo(
 		() => extractOptionalAttributes(variants, currentVariantId),
@@ -154,7 +157,7 @@ export function VariantSelectionSection({
 					channel,
 					`/products/${productSlug}`,
 				)}?${params.toString()}`;
-				router.push(path, { scroll: false });
+				router.push(withLang(path), { scroll: false });
 			});
 		},
 		[
@@ -166,6 +169,7 @@ export function VariantSelectionSection({
 			router,
 			startTransition,
 			setOptimisticSelections,
+			withLang,
 		],
 	);
 
@@ -195,10 +199,10 @@ export function VariantSelectionSection({
 					channel,
 					`/products/${productSlug}`,
 				)}?variant=${variantId}`;
-				router.push(path, { scroll: false });
+				router.push(withLang(path), { scroll: false });
 			});
 		},
-		[channel, locale, productSlug, router, startTransition, setOptimisticVariantId],
+		[channel, locale, productSlug, router, startTransition, setOptimisticVariantId, withLang],
 	);
 
 	if (children) {

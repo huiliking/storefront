@@ -13,6 +13,7 @@ import { buttonClassName } from "@/ui/components/ui/button";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { buildStorefrontPath } from "@/lib/storefront-path";
 import { getDisplayLanguage } from "@/lib/display-language-server";
+import { storefrontHrefWithLanguage } from "@/lib/display-language-server";
 
 // Prefetch: default (auto). Search is reached via form submit, not `prefetch={true}` links.
 
@@ -58,7 +59,9 @@ async function SearchContent({
 	if (!query) notFound();
 	if (Array.isArray(queryParam)) {
 		redirect(
-			`${buildStorefrontPath(params.locale, params.channel, "/search")}?query=${encodeURIComponent(query)}`,
+			await storefrontHrefWithLanguage(
+				`${buildStorefrontPath(params.locale, params.channel, "/search")}?query=${encodeURIComponent(query)}`,
+			),
 		);
 	}
 

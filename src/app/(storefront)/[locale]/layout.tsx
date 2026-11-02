@@ -5,7 +5,8 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { rootMetadata } from "@/lib/seo";
-import { getDisplayLanguage } from "@/lib/display-language-server";
+import { getDisplayLanguage, getExplicitDisplayLanguage } from "@/lib/display-language-server";
+import { ExplicitDisplayLanguageProvider } from "@/ui/atoms/display-language-context";
 import {
 	getDefaultLocaleSlug,
 	getDefaultTimeZone,
@@ -76,6 +77,7 @@ export default async function LocaleRootLayout({
 	const { locale } = await params;
 	const localeSlug = isStorefrontLocaleSlug(locale) ? locale : getDefaultLocaleSlug();
 	const displayLanguage = await getDisplayLanguage();
+	const explicitDisplayLanguage = await getExplicitDisplayLanguage();
 	const htmlLang = resolveLocaleFromSlug(displayLanguage).htmlLang;
 
 	// next-intl gets the display language; every client `useTranslations` / `useLocale` follows it.
@@ -92,7 +94,9 @@ export default async function LocaleRootLayout({
 			<body className="min-h-dvh font-sans">
 				<NextIntlClientProvider locale={displayLanguage} messages={messages} timeZone={getDefaultTimeZone()}>
 					<PersistBrowseLocaleCookie locale={localeSlug} />
-					{children}
+					<ExplicitDisplayLanguageProvider value={explicitDisplayLanguage}>
+						{children}
+					</ExplicitDisplayLanguageProvider>
 					{/* Sampled — unsampled Speed Insights dominates the Vercel bill at scale. */}
 					<SpeedInsights sampleRate={speedInsightsSampleRate()} />
 					{/* Unsampled page views — the denominator; URLs are redacted in beforeSend. */}

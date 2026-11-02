@@ -1,9 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { isLocaleSlug, isStorefrontLocaleSlug } from "@/config/locale";
+import { getStorefrontLocaleSlugs, isLocaleSlug, isStorefrontLocaleSlug } from "@/config/locale";
 import { BROWSE_LOCALE_COOKIE, getBrowseLocaleCookieOptions } from "@/lib/browse-locale";
 import {
+	DISPLAY_LANGUAGE_EXPLICIT_HEADER,
 	DISPLAY_LANGUAGE_HEADER,
 	DISPLAY_LANGUAGE_PARAM,
+	matchDisplayLanguage,
 	resolveDisplayLanguage,
 } from "@/lib/display-language";
 
@@ -55,14 +57,19 @@ export function middleware(request: NextRequest) {
 	// layouts and pages as a request header. No cookie, no channel list, no redirects —
 	// `[channel]/layout.tsx` validates `/{locale}/{channel}` against Saleor.
 	const marketLocale = first && isLocaleSlug(first) ? first : null;
+	const langParam = request.nextUrl.searchParams.get(DISPLAY_LANGUAGE_PARAM);
 	const displayLanguage = resolveDisplayLanguage({
-		lang: request.nextUrl.searchParams.get(DISPLAY_LANGUAGE_PARAM),
+		lang: langParam,
 		acceptLanguage: request.headers.get("accept-language"),
 		marketLocale,
 	});
 
 	const requestHeaders = new Headers(request.headers);
 	requestHeaders.set(DISPLAY_LANGUAGE_HEADER, displayLanguage);
+	// Explicit picker choice — links/redirects carry it on as `?lang=` (no cookie, ADR 0008).
+	const explicit = matchDisplayLanguage(langParam, getStorefrontLocaleSlugs());
+	if (explicit) requestHeaders.set(DISPLAY_LANGUAGE_EXPLICIT_HEADER, explicit);
+	else requestHeaders.delete(DISPLAY_LANGUAGE_EXPLICIT_HEADER);
 	// No `Vary: Accept-Language` needed: storefront HTML is per-request and sent as
 	// `Cache-Control: private, no-store`, so no shared cache stores one browser's language.
 	const response = NextResponse.next({ request: { headers: requestHeaders } });

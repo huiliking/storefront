@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/ui/atoms/storefront-link";
 import { type ReactNode } from "react";
 import { isLocaleSlug, type LocaleSlug } from "@/config/locale";
 import { resolveBrowseLocaleSlugWithFallback } from "@/lib/browse-locale";

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { buildStorefrontPath } from "@/lib/storefront-path";
+import { storefrontHrefWithLanguage } from "@/lib/display-language-server";
 
 type Props = {
 	params: Promise<{ locale: string; channel: string }>;
@@ -10,5 +11,5 @@ type Props = {
  */
 export default async function LegacyOrdersPage({ params }: Props) {
 	const { locale, channel } = await params;
-	redirect(buildStorefrontPath(locale, channel, "/account/orders"));
+	redirect(await storefrontHrefWithLanguage(buildStorefrontPath(locale, channel, "/account/orders")));
 }

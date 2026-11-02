@@ -1,10 +1,7 @@
 import { Suspense } from "react";
-import Link from "next/link";
-import { StorefrontRegionPicker } from "./storefront-region-picker";
-import { getStorefrontChannels } from "@/lib/channels/get-storefront-channels";
+import Link from "@/ui/atoms/storefront-link";
 import { getFooterMenuItems } from "@/lib/menus/get-menu-data";
 import { getStorefrontContent } from "@/lib/content/server";
-import { getStorefrontLocaleOptions } from "@/lib/locale-display";
 import { FooterMenuColumns } from "./footer-menu-columns";
 import { CopyrightText } from "./copyright-text";
 import { FooterAttribution } from "./footer-attribution";
@@ -17,25 +14,12 @@ import { getDisplayLanguage } from "@/lib/display-language-server";
 
 export async function Footer({ locale, channel }: { locale: string; channel: string }) {
 	const displayLanguage = await getDisplayLanguage();
-	const [menuItems, storefrontChannels, content] = await Promise.all([
+	const [menuItems, content] = await Promise.all([
 		getFooterMenuItems(channel, locale, displayLanguage),
-		getStorefrontChannels(),
 		getStorefrontContent(channel, displayLanguage),
 	]);
 
 	const footerMenuItems = menuItems ?? [];
-	const localeOptions = getStorefrontLocaleOptions();
-	// Markets come from Saleor (active + opted in via `storefront.locales`), no token-gated fallback.
-	const selectorChannels = storefrontChannels.map(
-		({ id, name, slug, currencyCode, locales, defaultLocale }) => ({
-			id,
-			name,
-			slug,
-			currencyCode,
-			locales,
-			defaultLocale,
-		}),
-	);
 
 	return (
 		<footer className="bg-foreground text-background">
@@ -53,12 +37,7 @@ export async function Footer({ locale, channel }: { locale: string; channel: str
 					<FooterMenuColumns items={footerMenuItems} />
 				</div>
 
-				{/* Language + market — hidden when only one option on each axis */}
-				{(localeOptions.length > 1 || selectorChannels.length > 1) && (
-					<div className="mt-10">
-						<StorefrontRegionPicker locales={localeOptions} channels={selectorChannels} variant="inverted" />
-					</div>
-				)}
+				{/* Market selector (left) and language picker (right) live in the header — ADR 0008. */}
 
 				{/* Bottom bar */}
 				<div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-inverse pt-8 sm:flex-row">

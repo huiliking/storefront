@@ -3,6 +3,11 @@ import { cookies } from "next/headers";
 import { io } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { getDisplayLanguage } from "@/lib/display-language-server";
+import { getStorefrontChannels } from "@/lib/channels/get-storefront-channels";
+import { getLocaleEndonym, getStorefrontLocaleOptions } from "@/lib/locale-display";
+import type { LocaleSlug } from "@/config/locale";
+import { LanguagePicker } from "@/ui/components/language-picker";
+import { MarketSelector, type MarketOption } from "@/ui/components/market-selector";
 import { getAnnouncementBarProps, getStorefrontContent } from "@/lib/content/server";
 import { getNavbarMenuItems } from "@/lib/menus/get-menu-data";
 import { serializeMenuForNav } from "@/lib/menus/serialize-menu-for-nav";
@@ -18,6 +23,26 @@ import { AnnouncementBar } from "@/ui/sections/announcement-bar/announcement-bar
 import { DismissibleAnnouncementBar } from "@/ui/sections/announcement-bar/announcement-bar-slot";
 
 export type BrowseRouteParams = Promise<{ locale: string; channel: string }>;
+
+/** Markets (Saleor channel × paired market locale) for the market selector — ADR 0008. */
+async function getMarketOptions(): Promise<MarketOption[]> {
+	return (await getStorefrontChannels()).map((channel) => ({
+		slug: channel.slug,
+		label: channel.name.trim() || channel.currencyCode,
+		currencyCode: channel.currencyCode,
+		locales: channel.locales.map((slug: LocaleSlug) => ({ slug, label: getLocaleEndonym(slug) })),
+	}));
+}
+
+/** Header, left: market selector (channel + market locale). Desktop only; mobile gets it in the menu. */
+export async function HeaderMarketSlot() {
+	return <MarketSelector markets={await getMarketOptions()} className="hidden md:inline-flex" />;
+}
+
+/** Header, right: display-language picker (`?lang=`). */
+export function HeaderLanguageSlot() {
+	return <LanguagePicker languages={getStorefrontLocaleOptions()} />;
+}
 
 /** Cached announcement copy + policy interpolation; nested Suspense for dismiss cookie. */
 export async function AnnouncementBarSlot({ params }: { params: BrowseRouteParams }) {
@@ -128,10 +153,11 @@ export async function HeaderActionsSlot({ params }: { params: BrowseRouteParams 
 export async function HeaderMobileMenuSlot({ params }: { params: BrowseRouteParams }) {
 	const { locale, channel } = await params;
 	const lang = await getDisplayLanguage();
-	const [navItems, content, tSearchBar] = await Promise.all([
+	const [navItems, content, tSearchBar, markets] = await Promise.all([
 		getNavbarMenuItems(channel, locale, lang).then((items) => serializeMenuForNav(items ?? [])),
 		getStorefrontContent(channel, lang),
 		getTranslations({ locale: lang, namespace: "search.bar" }),
+		getMarketOptions(),
 	]);
 
 	return (
@@ -144,6 +170,10 @@ export async function HeaderMobileMenuSlot({ params }: { params: BrowseRoutePara
 					placeholder={tSearchBar("placeholder")}
 					srOnlyLabel={tSearchBar("srOnlyLabel")}
 				/>
+			</li>
+			<li className="flex flex-wrap items-center gap-2 py-3">
+				<MarketSelector markets={markets} labelClassName="inline" />
+				<LanguagePicker languages={getStorefrontLocaleOptions()} />
 			</li>
 		</MobileMenu>
 	);

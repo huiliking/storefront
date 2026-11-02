@@ -16,6 +16,7 @@ import { fetchAuthenticatedUserIfSession } from "@/lib/auth/fetch-authenticated-
 import { resolveSessionUser } from "@/lib/auth/resolve-session-user";
 import { buildStorefrontPath } from "@/lib/storefront-path";
 import { getDisplayLanguage } from "@/lib/display-language-server";
+import { storefrontHrefWithLanguage } from "@/lib/display-language-server";
 
 export async function generateMetadata() {
 	const t = await getTranslations({ locale: await getDisplayLanguage(), namespace: "account.metadata" });
@@ -99,7 +100,7 @@ async function LoginContent({ locale, channel }: { locale: string; channel: stri
 	const auth = await resolveSessionUser(() => fetchAuthenticatedUserIfSession(CurrentUserDocument));
 
 	if (auth.status === "authenticated") {
-		redirect(buildStorefrontPath(locale, channel));
+		redirect(await storefrontHrefWithLanguage(buildStorefrontPath(locale, channel)));
 	}
 
 	if (auth.status === "unavailable") {

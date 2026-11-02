@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/ui/atoms/storefront-link";
 import type { MenuItem } from "@/lib/menus/get-menu-data";
 import { getMenuItemHref, getMenuItemLabel } from "@/lib/menus/menu-item-utils";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
