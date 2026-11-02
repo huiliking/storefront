@@ -1,4 +1,14 @@
-import type { ChannelSelectOption } from "@/config/channels";
+/** A storefront market (Saleor channel) for selectors — built from `getStorefrontChannels()`. */
+export type ChannelSelectOption = {
+	id: string;
+	name: string;
+	slug: string;
+	currencyCode: string;
+	/** Market locales paired with the channel in Saleor. */
+	locales: string[];
+	/** Locale used when switching into this market from a locale it does not list. */
+	defaultLocale: string;
+};
 
 export type MarketSelectOption = ChannelSelectOption & {
 	/** Saleor channel name, or currency code when name is missing */

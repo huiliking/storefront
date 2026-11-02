@@ -3,7 +3,6 @@
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { isLocaleSlug, isStorefrontLocaleSlug } from "@/config/locale";
-import { getPairedChannelForLocale } from "@/config/locale-channel";
 import { useCatalogIdentity } from "@/lib/catalog/catalog-identity-bridge";
 import {
 	appendSearchParams,
@@ -43,13 +42,9 @@ export function useStorefrontRegionNavigation() {
 			writeBrowseLocaleCookieClient(newLocale);
 		}
 
-		// When a locale×channel matrix is configured, switch to the paired market too.
-		const targetChannel = getPairedChannelForLocale(newLocale, channel);
-
-		if (targetChannel !== channel && hasCartCookieForChannel(channel)) {
-			const proceed = window.confirm(t("confirmMarketSwitch"));
-			if (!proceed) return;
-		}
+		// A language switch never changes the market (ADR 0008): the picker only offers locales
+		// Saleor pairs with the current channel.
+		const targetChannel = channel;
 
 		const parsed = parseStorefrontPathname(pathname);
 		let suffix = parsed?.suffix ?? "";
@@ -68,7 +63,11 @@ export function useStorefrontRegionNavigation() {
 		router.push(appendSearchParams(path, keepQuery ? searchParams : undefined));
 	}
 
-	function navigateToChannel(newChannel: string) {
+	/**
+	 * Switch market. `targetLocale` is set when the new channel does not list the current locale —
+	 * then enter at the market's default locale on its home page (slugs differ per locale).
+	 */
+	function navigateToChannel(newChannel: string, targetLocale?: string) {
 		if (!locale || newChannel === channel) return;
 
 		// Locale slugs must never land in the channel segment (e.g. `no` / `nb` mistaken for a market).
@@ -77,6 +76,11 @@ export function useStorefrontRegionNavigation() {
 		if (hasCartCookieForChannel(channel)) {
 			const proceed = window.confirm(t("confirmMarketSwitch"));
 			if (!proceed) return;
+		}
+
+		if (targetLocale && targetLocale !== locale) {
+			router.push(buildStorefrontPath(targetLocale, newChannel));
+			return;
 		}
 
 		const path = replaceStorefrontChannel(pathname, newChannel) ?? buildStorefrontPath(locale, newChannel);

@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { buildManifest } from "@/lib/saleor";
+import { getStorefrontChannels } from "@/lib/channels/get-storefront-channels";
 import { extractBearerToken, verifySecret } from "@/lib/api-auth";
 
 /**
@@ -20,7 +21,8 @@ export async function GET(request: NextRequest) {
 		return Response.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
-	return Response.json(buildManifest(), {
+	const channels = (await getStorefrontChannels()).map((channel) => channel.slug);
+	return Response.json(buildManifest(channels), {
 		headers: {
 			"Cache-Control": "private, no-store",
 		},

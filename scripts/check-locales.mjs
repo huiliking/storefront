@@ -9,8 +9,8 @@
  * `docs/adding-a-locale-or-market.md`.
  *
  * Errors (exit 1):
- *   1. `NEXT_PUBLIC_STOREFRONT_LOCALES`, `NEXT_PUBLIC_DEFAULT_LOCALE` and the locale side of
- *      `NEXT_PUBLIC_STOREFRONT_LOCALE_CHANNELS` only use defined locale slugs, and the effective
+ *   1. `NEXT_PUBLIC_STOREFRONT_LOCALES` and `NEXT_PUBLIC_DEFAULT_LOCALE` only use defined locale
+ *      slugs, and the effective
  *      default locale (env value or the "en" fallback) is enabled — otherwise middleware redirects
  *      it to itself in a loop.
  *   2. Every `graphqlLanguageCode` is a real Saleor `LanguageCodeEnum` value
@@ -78,12 +78,8 @@ if (enabled.length > 0 && !enabled.includes(effectiveDefault)) {
 	);
 }
 
-for (const pair of csv(process.env.NEXT_PUBLIC_STOREFRONT_LOCALE_CHANNELS)) {
-	const [slug] = pair.split(":");
-	if (slug && !isDefined(slug)) {
-		errors.push(`NEXT_PUBLIC_STOREFRONT_LOCALE_CHANNELS pair "${pair}" uses undefined locale "${slug}".`);
-	}
-}
+// Locale↔channel pairs live in Saleor channel metadata (`storefront.locales`, ADR 0008) and are
+// validated at runtime: unknown slugs are dropped with a `[Channels]` warning.
 
 if (enabled.length > 0) {
 	const disabled = definedSlugs.filter((slug) => !enabled.includes(slug));

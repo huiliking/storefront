@@ -1,6 +1,5 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { extensionCacheProfiles } from "../extensions";
-import { getStaticStorefrontChannelSlugs } from "@/config/channels";
 import { getDefaultLocaleSlug, getLocaleBcp47List, getStorefrontLocaleSlugs } from "@/config/locale";
 import {
 	DEFAULT_PAPER_CACHE_LIFE_PROFILE,
@@ -723,7 +722,8 @@ export function buildStorefrontManifestIdentity(
 	return identity;
 }
 
-export function buildManifest() {
+/** `channels` = storefront channel slugs from Saleor (passed in to avoid a data-layer import cycle). */
+export function buildManifest(channels: readonly string[] = []) {
 	const identity = buildStorefrontManifestIdentity();
 
 	return {
@@ -740,7 +740,7 @@ export function buildManifest() {
 		})),
 		locales: [...getStorefrontLocaleSlugs()],
 		defaultLocale: getDefaultLocaleSlug(),
-		channels: getStaticStorefrontChannelSlugs(),
+		channels: [...channels],
 		menuSlugs: Object.keys(STOREFRONT_MENU_SLUGS),
 		...(identity ? { identity } : {}),
 	};

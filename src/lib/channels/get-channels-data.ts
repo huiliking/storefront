@@ -5,8 +5,9 @@ import { ChannelsListDocument, type ChannelsListQuery } from "@/gql/graphql";
 import { CACHE_PROFILES, cachedQuery } from "@/lib/saleor";
 
 /**
- * Channel metadata (currency, default country, active slugs). Optional: every caller
- * falls back to `STOREFRONT_CHANNELS` when `channels` is missing.
+ * Saleor channel list (currency, default country, active flag, storefront metadata).
+ * `getStorefrontChannels()` turns it into the storefront's channels and fails loudly when it
+ * is missing (ADR 0008); `null` means no `SALEOR_APP_TOKEN`.
  */
 export const getCachedChannelsList = cache(async (): Promise<ChannelsListQuery | null> => {
 	// Outside `"use cache"`. A missing token must not be stored as the channel list

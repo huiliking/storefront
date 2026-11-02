@@ -3,12 +3,15 @@
 import type { ReactNode } from "react";
 import { Check, ChevronDown, Globe, Languages, Store } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { ChannelSelectOption } from "@/config/channels";
 import { getLocaleDefinition } from "@/config/locale";
-import { getLocalesForChannel } from "@/config/locale-channel";
 import { useStorefrontRegionNavigation } from "@/hooks/use-storefront-region-navigation";
 import type { LocaleSelectOption } from "@/lib/locale-display";
-import { enrichMarketOptions, getCurrencySymbol, type MarketSelectOption } from "@/lib/market-display";
+import {
+	enrichMarketOptions,
+	getCurrencySymbol,
+	type ChannelSelectOption,
+	type MarketSelectOption,
+} from "@/lib/market-display";
 import { cn } from "@/lib/utils";
 import {
 	DropdownMenu,
@@ -101,9 +104,15 @@ export function StorefrontRegionPicker({
 	const showMarket = channels.length > 1;
 	const marketOptions = enrichMarketOptions(channels);
 
-	const allowedLocales = getLocalesForChannel(channel);
+	// Languages offered = market locales Saleor pairs with the current channel.
+	const allowedLocales = channels.find((item) => item.slug === channel)?.locales ?? null;
 	const visibleLocales =
 		allowedLocales === null ? locales : locales.filter((item) => allowedLocales.includes(item.slug));
+	const switchMarket = (slug: string) => {
+		const target = channels.find((item) => item.slug === slug);
+		// Keep the current locale when the target market lists it, else enter at its default locale.
+		navigateToChannel(slug, target && !target.locales.includes(locale) ? target.defaultLocale : undefined);
+	};
 
 	const currentLocale =
 		visibleLocales.find((item) => item.slug === locale) ?? locales.find((item) => item.slug === locale);
@@ -124,8 +133,8 @@ export function StorefrontRegionPicker({
 					"group inline-flex max-w-full items-center gap-2.5 rounded-full border px-4 py-2.5 text-sm transition-all",
 					"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
 					inverted
-						? "border-inverse/20 bg-background/5 hover:border-inverse/35 hover:bg-background/10 focus-visible:ring-background/40 text-inverse-subtle hover:text-inverse focus-visible:ring-offset-foreground"
-						: "hover:border-border/80 hover:bg-secondary/60 border-border bg-background text-foreground shadow-sm focus-visible:ring-ring focus-visible:ring-offset-background",
+						? "border-inverse/20 bg-background/5 text-inverse-subtle hover:border-inverse/35 hover:bg-background/10 hover:text-inverse focus-visible:ring-background/40 focus-visible:ring-offset-foreground"
+						: "border-border bg-background text-foreground shadow-sm hover:border-border/80 hover:bg-secondary/60 focus-visible:ring-ring focus-visible:ring-offset-background",
 					className,
 				)}
 				aria-label={t("ariaLabel")}
@@ -167,7 +176,7 @@ export function StorefrontRegionPicker({
 											key={item.slug}
 											value={item.slug}
 											lang={item.slug}
-											className="data-[state=checked]:bg-accent/60 my-0.5 rounded-lg py-2.5 pl-3 pr-3 [&>span:first-child]:hidden"
+											className="my-0.5 rounded-lg py-2.5 pl-3 pr-3 data-[state=checked]:bg-accent/60 [&>span:first-child]:hidden"
 										>
 											<OptionRow label={item.label} selected={item.slug === locale} />
 										</DropdownMenuRadioItem>
@@ -180,12 +189,12 @@ export function StorefrontRegionPicker({
 					{showMarket ? (
 						<PickerSection icon={Store} title={t("marketTitle")} description={t("marketDescription")}>
 							<DropdownMenuGroup>
-								<DropdownMenuRadioGroup value={channel} onValueChange={navigateToChannel}>
+								<DropdownMenuRadioGroup value={channel} onValueChange={switchMarket}>
 									{marketOptions.map((item) => (
 										<DropdownMenuRadioItem
 											key={item.id}
 											value={item.slug}
-											className="data-[state=checked]:bg-accent/60 my-0.5 rounded-lg py-2.5 pl-3 pr-3 [&>span:first-child]:hidden"
+											className="my-0.5 rounded-lg py-2.5 pl-3 pr-3 data-[state=checked]:bg-accent/60 [&>span:first-child]:hidden"
 										>
 											<OptionRow
 												label={item.displayLabel}

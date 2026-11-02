@@ -1,14 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { StorefrontRegionPicker } from "./storefront-region-picker";
-import {
-	getStaticStorefrontChannelSlugs,
-	needsAsyncChannelDiscovery,
-	shouldFetchChannelMetadata,
-	toChannelSelectOptions,
-} from "@/config/channels";
-import { getCachedChannelsList } from "@/lib/channels/get-channels-data";
-import { getStorefrontChannelSlugs } from "@/lib/channel-slugs";
+import { getStorefrontChannels } from "@/lib/channels/get-storefront-channels";
 import { getFooterMenuItems } from "@/lib/menus/get-menu-data";
 import { getStorefrontContent } from "@/lib/content/server";
 import { getStorefrontLocaleOptions } from "@/lib/locale-display";
@@ -23,22 +16,26 @@ import { buildStorefrontPath } from "@/lib/storefront-path";
 import { getDisplayLanguage } from "@/lib/display-language-server";
 
 export async function Footer({ locale, channel }: { locale: string; channel: string }) {
-	const resolvedSlugs = needsAsyncChannelDiscovery()
-		? await getStorefrontChannelSlugs()
-		: getStaticStorefrontChannelSlugs();
-
-	const [menuItems, channels, content] = await Promise.all([
-		getFooterMenuItems(channel, locale, await getDisplayLanguage()),
-		shouldFetchChannelMetadata(resolvedSlugs) ? getCachedChannelsList() : Promise.resolve(null),
-		getStorefrontContent(channel, await getDisplayLanguage()),
+	const displayLanguage = await getDisplayLanguage();
+	const [menuItems, storefrontChannels, content] = await Promise.all([
+		getFooterMenuItems(channel, locale, displayLanguage),
+		getStorefrontChannels(),
+		getStorefrontContent(channel, displayLanguage),
 	]);
 
 	const footerMenuItems = menuItems ?? [];
 	const localeOptions = getStorefrontLocaleOptions();
-	const selectorChannels =
-		channels?.channels && resolvedSlugs.length > 0
-			? toChannelSelectOptions(channels.channels, resolvedSlugs)
-			: [];
+	// Markets come from Saleor (active + opted in via `storefront.locales`), no token-gated fallback.
+	const selectorChannels = storefrontChannels.map(
+		({ id, name, slug, currencyCode, locales, defaultLocale }) => ({
+			id,
+			name,
+			slug,
+			currencyCode,
+			locales,
+			defaultLocale,
+		}),
+	);
 
 	return (
 		<footer className="bg-foreground text-background">
