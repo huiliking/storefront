@@ -1,6 +1,6 @@
 # ADR 0008: Saleor-owned channels, market locale vs display language
 
-**Status:** Accepted — Phase 1 complete (steps 1–6); Phase 2 proposed  
+**Status:** Accepted — Phase 1 complete (steps 1–6); Phase 2 implemented on fork branches (live staff-side checks pending)  
 **Date:** 2026-11-01  
 **Deciders:** huiliking (localization audit, fork `huiliking/storefront`)  
 **Amends:** [0001 Locale and channel URL routing](./0001-locale-channel-url-routing.md), [0004 Saleor translatable catalog slugs](./0004-translatable-slugs.md)  
@@ -170,7 +170,7 @@ Status after step 6 — Phase 1 complete.
 (the ceiling of what the code can display); translated slugs (now keyed by market locale); `cart-channel-cookie`
 (commerce state per channel, not language); upstream PPR tooling (`check:ppr-resume`, instant-navigation e2e).
 
-## Phase 2 (proposed): proper fields in Saleor + Dashboard
+## Phase 2: proper fields in Saleor + Dashboard
 
 Requires forking Saleor and the Dashboard; candidate for an upstream PR.
 
@@ -182,6 +182,31 @@ Requires forking Saleor and the Dashboard; candidate for an upstream PR.
 - Storefront: only `get-storefront-channels.ts` changes (metadata → fields), with the metadata reader kept for one
   release and a one-off copy script.
 - Later: `requiredDocumentLanguage` per channel for order and account documents.
+
+### Phase 2 status (2026-11-07)
+
+Implemented on branch `channel-storefront-fields` in the forks `huiliking/saleor` and `huiliking/saleor-dashboard`,
+and `channel-storefront-fields-f1` here (local commits, not pushed). Decisions: **override** (the channel default
+locale always wins), enforced at **creation points**, locales stored as **lowercase Saleor language codes**
+(`fr-ca`, same format as storefront slugs), **copy + fallback** migration.
+
+| Step  | Change                                                                                                                                                                  |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B1    | `Channel.storefront_locales`, `default_locale`, `is_storefront_visible` + migration `channel.0028`; validation in `saleor/channel/storefront.py`                        |
+| B2    | GraphQL `Channel.storefrontLocales / defaultLocale / isStorefrontVisible` (app or staff), `channelCreate/channelUpdate` inputs (`MANAGE_CHANNELS`), `schema.graphql`    |
+| B3    | Override in `checkoutCreate`, `checkoutLanguageCodeUpdate`, checkout completion → order, `draftOrderCreate/Update`, `orderUpdate`, `orderBulkCreate`, `accountRegister` |
+| B4    | api/worker rebuilt, migration applied (backup `backups/saleor-pre-phase2-*.dump`)                                                                                       |
+| D1/D2 | Dashboard: fields in schema + `ChannelDetails`; "Storefront" card on the channel details page (visibility toggle, comma-separated locales, default-locale select)       |
+| F1    | Storefront reads the fields first, metadata fallback; default channel stays `storefront.default` metadata                                                               |
+| M1    | `manage.py copy_storefront_channel_metadata` — copied local channels (`channel-fr` → `fr,fr-ca,en`, default `fr`; `default-channel` → `en,ja,de,fi,ko,nb`)              |
+
+Verified: 433 backend tests (new + all touched modules), 288 Dashboard channel tests, storefront parser tests;
+live `checkoutCreate` with `languageCode: EN` on `channel-fr` stores `fr`; storefront routing works from the
+fields after rebuild. **Pending (need a staff login):** a live Dashboard draft order on `channel-fr` and a
+Dashboard form edit reaching the storefront.
+
+**Not covered:** `orderBulkCreate` has no dedicated test; channel create/duplicate in the Dashboard do not
+expose the fields (edit after creating); there is no field for the default channel.
 
 ## Alternatives considered
 
