@@ -123,3 +123,54 @@ describe("isMarketPair", () => {
 		expect(isMarketPair(channels, "fr", "unknown")).toBe(false);
 	});
 });
+
+describe("parseStorefrontChannels — Saleor fields (ADR 0008, Phase 2)", () => {
+	function withFields(
+		slug: string,
+		fields: { storefrontLocales?: string[]; defaultLocale?: string | null; isStorefrontVisible?: boolean },
+		metadata: Record<string, string> = {},
+	) {
+		return { ...channel(slug, metadata), ...fields };
+	}
+
+	it("prefers the channel fields over metadata", () => {
+		const { channels } = parseStorefrontChannels([
+			withFields(
+				"channel-fr",
+				{ storefrontLocales: ["fr", "fr-ca"], defaultLocale: "fr-ca", isStorefrontVisible: true },
+				{ [KEYS.locales]: "en" },
+			),
+		]);
+		expect(channels[0]?.locales).toEqual(["fr", "fr-ca"]);
+		expect(channels[0]?.defaultLocale).toBe("fr-ca");
+	});
+
+	it("hides a channel whose fields are set but not visible", () => {
+		const { channels } = parseStorefrontChannels([
+			withFields("b2b", { storefrontLocales: ["en"], isStorefrontVisible: false }, { [KEYS.locales]: "en" }),
+		]);
+		expect(channels).toEqual([]);
+	});
+
+	it("falls back to metadata when no field is set", () => {
+		const { channels } = parseStorefrontChannels([
+			withFields(
+				"legacy",
+				{ storefrontLocales: [], defaultLocale: null, isStorefrontVisible: false },
+				{ [KEYS.locales]: "ja", [KEYS.isDefault]: "true" },
+			),
+		]);
+		expect(channels[0]?.locales).toEqual(["ja"]);
+		expect(channels[0]?.isDefault).toBe(true);
+	});
+
+	it("reports unknown locales from the fields", () => {
+		const { channels, issues } = parseStorefrontChannels([
+			withFields("x", { storefrontLocales: ["en", "pt-br"], isStorefrontVisible: true }),
+		]);
+		expect(channels[0]?.locales).toEqual(["en"]);
+		expect(issues).toEqual([
+			{ channel: "x", message: expect.stringContaining('"pt-br" in storefrontLocales') },
+		]);
+	});
+});

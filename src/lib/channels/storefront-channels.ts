@@ -40,7 +40,18 @@ type ChannelInput = {
 	currencyCode: string;
 	defaultCountry?: { code: string } | null;
 	metadata?: ReadonlyArray<{ key: string; value: string }> | null;
+	/** Saleor channel fields (ADR 0008, Phase 2). Preferred over metadata when set. */
+	storefrontLocales?: ReadonlyArray<string> | null;
+	defaultLocale?: string | null;
+	isStorefrontVisible?: boolean | null;
 };
+
+/** Phase 2 fields are "set" once any of them carries a value; otherwise metadata (Phase 1) applies. */
+function hasStorefrontFields(channel: ChannelInput): boolean {
+	return (
+		(channel.storefrontLocales?.length ?? 0) > 0 || !!channel.isStorefrontVisible || !!channel.defaultLocale
+	);
+}
 
 const KNOWN_KEYS: readonly string[] = Object.values(CHANNEL_METADATA_KEYS);
 const KEY_PREFIX = "storefront.";
@@ -95,16 +106,30 @@ export function parseStorefrontChannels(channels: ReadonlyArray<ChannelInput> | 
 			});
 		}
 
-		const { locales, unknown } = parseLocaleList(readMetadata(channel, CHANNEL_METADATA_KEYS.locales));
+		// Phase 2: Saleor channel fields win; metadata is the fallback for one release (ADR 0008).
+		const fromFields = hasStorefrontFields(channel);
+		if (fromFields && !channel.isStorefrontVisible) continue;
+		const localesLabel = fromFields ? "storefrontLocales" : CHANNEL_METADATA_KEYS.locales;
+		const defaultLabel = fromFields ? "defaultLocale" : CHANNEL_METADATA_KEYS.defaultLocale;
+
+		const { locales, unknown } = parseLocaleList(
+			fromFields
+				? (channel.storefrontLocales ?? []).join(",")
+				: readMetadata(channel, CHANNEL_METADATA_KEYS.locales),
+		);
 		for (const slug of unknown) {
 			issues.push({
 				channel: channel.slug,
-				message: `unknown locale "${slug}" in ${CHANNEL_METADATA_KEYS.locales}`,
+				message: `unknown locale "${slug}" in ${localesLabel}`,
 			});
 		}
 		if (locales.length === 0) continue;
 
-		const requestedDefault = readMetadata(channel, CHANNEL_METADATA_KEYS.defaultLocale)?.toLowerCase();
+		const requestedDefault = (
+			fromFields
+				? (channel.defaultLocale ?? undefined)
+				: readMetadata(channel, CHANNEL_METADATA_KEYS.defaultLocale)
+		)?.toLowerCase();
 		let defaultLocale = locales[0];
 		if (requestedDefault) {
 			const match = locales.find((slug) => slug === requestedDefault);
@@ -112,7 +137,7 @@ export function parseStorefrontChannels(channels: ReadonlyArray<ChannelInput> | 
 			else
 				issues.push({
 					channel: channel.slug,
-					message: `${CHANNEL_METADATA_KEYS.defaultLocale} "${requestedDefault}" is not in ${CHANNEL_METADATA_KEYS.locales}; using "${defaultLocale}"`,
+					message: `${defaultLabel} "${requestedDefault}" is not in ${localesLabel}; using "${defaultLocale}"`,
 				});
 		}
 
