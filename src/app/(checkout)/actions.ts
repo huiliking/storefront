@@ -90,12 +90,12 @@ import { toTypedDocument } from "@/checkout/lib/server/to-typed-document";
 import { checkoutGraphqlLanguageCode, resolveCheckoutLocaleSlug } from "@/lib/checkout-locale";
 import { emitCommerceEvent } from "@/lib/analytics/emit.server";
 import { checkoutCreateContextMetadata } from "@/lib/commerce-context/checkout-create-context";
-import { graphqlLanguageCodeVariables } from "@/lib/graphql-locale";
 import { isAllowedRedirectUrl } from "@/lib/auth/validate-redirect-url";
 import { liveQuery, mutate, rawMutation } from "@/lib/saleor";
 import * as Checkout from "@/lib/checkout";
 import { saveCheckoutId } from "@/app/actions";
 import { setOrderViewCookie, signOrderViewToken } from "@/lib/order-view";
+import { getDocumentLanguageCode } from "@/lib/channels/document-language";
 
 const checkoutEmailUpdateDocument = toTypedDocument<
 	CheckoutEmailUpdateMutation,
@@ -302,7 +302,8 @@ export async function registerCheckoutAccount(input: {
 				errors { field message code }
 			}
 		}`,
-		variables: { input },
+		// Account emails follow the channel's default locale, not the display language (ADR 0008).
+		variables: { input: { ...input, languageCode: await getDocumentLanguageCode(input.channel) } },
 	});
 
 	if (!result.ok) {
@@ -342,7 +343,8 @@ export async function recoverOrphanedCheckout(
 	const createResult = await mutate(checkoutCreateDocument, {
 		variables: {
 			channel,
-			languageCode: graphqlLanguageCodeVariables(locale).languageCode,
+			// Document language (order emails/invoices) = channel default locale (ADR 0008).
+			languageCode: await getDocumentLanguageCode(channel),
 			metadata: await checkoutCreateContextMetadata(locale),
 		},
 	});

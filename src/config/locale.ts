@@ -121,13 +121,17 @@ export function getDefaultLocaleSlug(): LocaleSlug {
 }
 
 /**
- * Configured storefront locale slugs (`NEXT_PUBLIC_STOREFRONT_LOCALES`).
+ * Display languages this storefront renders (`NEXT_PUBLIC_STOREFRONT_DISPLAY_LANGUAGES`) — ADR 0008.
  *
- * Must be a `NEXT_PUBLIC_*` var so the allowlist is identical on the server and in the
- * browser — client components (locale links, checkout) validate slugs too.
+ * Translation only: the language picker's options and the `?lang=` / browser matching. Not a market
+ * list — URL (market) locales come from Saleor channel metadata and are validated against
+ * `LOCALE_DEFINITIONS`. `NEXT_PUBLIC_*` because the middleware reads it too.
+ * Legacy name `NEXT_PUBLIC_STOREFRONT_LOCALES` is still read as a fallback.
  */
 export function getStorefrontLocaleSlugs(): readonly LocaleSlug[] {
-	const configured = parseEnvLocaleList(process.env.NEXT_PUBLIC_STOREFRONT_LOCALES);
+	const configured = parseEnvLocaleList(
+		process.env.NEXT_PUBLIC_STOREFRONT_DISPLAY_LANGUAGES ?? process.env.NEXT_PUBLIC_STOREFRONT_LOCALES,
+	);
 	if (configured) {
 		return configured.filter(isLocaleSlug);
 	}
@@ -138,7 +142,7 @@ export function isLocaleSlug(value: string): value is LocaleSlug {
 	return value in LOCALE_DEFINITIONS;
 }
 
-/** Locale slug enabled for this deployment (`NEXT_PUBLIC_STOREFRONT_LOCALES` allowlist). */
+/** A display language this storefront renders (`NEXT_PUBLIC_STOREFRONT_DISPLAY_LANGUAGES`). */
 export function isStorefrontLocaleSlug(value: string): value is LocaleSlug {
 	return isLocaleSlug(value) && (getStorefrontLocaleSlugs() as readonly string[]).includes(value);
 }

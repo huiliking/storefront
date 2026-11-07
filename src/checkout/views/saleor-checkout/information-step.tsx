@@ -4,7 +4,6 @@ import { useState, useCallback, useEffect, type FC } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { syncAuthSurfacesAfterSignIn } from "@/lib/auth";
 import { buildAccountConfirmationRedirectUrl } from "@/lib/auth/account-confirmation-url";
-import { resolveBrowseLocaleSlugWithFallback } from "@/lib/browse-locale";
 import { isCheckoutMarketingConsentEnabled } from "@/checkout/lib/marketing-consent";
 import { Button } from "@/ui/components/ui/button";
 import {
@@ -44,6 +43,7 @@ import { useTranslations } from "next-intl";
 import { SignInForm, ResetPasswordForm } from "@/checkout/components/contact";
 import { ContactSection, ShippingAddressSection } from "./sections";
 import { MobileStickyAction } from "./mobile-sticky-action";
+import { useCheckoutBrowseLocale } from "@/checkout/providers/checkout-browse";
 
 // =============================================================================
 // Types
@@ -110,6 +110,8 @@ const InformationStepForm: FC<InformationStepFormProps> = ({
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const t = useTranslations("checkout.actions");
+	// Market locale for the account-confirmation link back to the storefront (no cookie, ADR 0008).
+	const storefrontLocale = useCheckoutBrowseLocale();
 	const tErrors = useTranslations("checkout.errors");
 	const tAccount = useTranslations("account.errors");
 	const { setAvailabilityIssue } = useCheckoutAvailability();
@@ -367,7 +369,7 @@ const InformationStepForm: FC<InformationStepFormProps> = ({
 							channel: checkout.channel.slug,
 							redirectUrl: buildAccountConfirmationRedirectUrl(
 								window.location.origin,
-								resolveBrowseLocaleSlugWithFallback(),
+								storefrontLocale,
 								checkout.channel.slug,
 							),
 						});

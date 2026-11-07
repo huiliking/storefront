@@ -9,7 +9,7 @@
  * `docs/adding-a-locale-or-market.md`.
  *
  * Errors (exit 1):
- *   1. `NEXT_PUBLIC_STOREFRONT_LOCALES` and `NEXT_PUBLIC_DEFAULT_LOCALE` only use defined locale
+ *   1. `NEXT_PUBLIC_STOREFRONT_DISPLAY_LANGUAGES` and `NEXT_PUBLIC_DEFAULT_LOCALE` only use defined locale
  *      slugs, and the effective
  *      default locale (env value or the "en" fallback) is enabled — otherwise middleware redirects
  *      it to itself in a loop.
@@ -19,7 +19,7 @@
  *   4. Each fragment in `src/graphql/LocaleSlugTranslations.graphql` has exactly one
  *      `slug<CODE>: translation(languageCode: <CODE>)` alias per distinct `graphqlLanguageCode`.
  * Info (no failure):
- *   - Defined locales not enabled by `NEXT_PUBLIC_STOREFRONT_LOCALES` — a per-shop subset is
+ *   - Defined locales not enabled by `NEXT_PUBLIC_STOREFRONT_DISPLAY_LANGUAGES` — a per-shop subset is
  *     allowed by design, so shops can switch languages off without editing shared code.
  *
  * Run: pnpm run check:locales   (also runs before `next build` and in `pnpm run verify`)
@@ -49,11 +49,14 @@ const csv = (raw) =>
 		.map((s) => s.trim().toLowerCase())
 		.filter(Boolean);
 
-const enabled = csv(process.env.NEXT_PUBLIC_STOREFRONT_LOCALES);
+// Display languages (ADR 0008); legacy name still read as a fallback.
+const enabled = csv(
+	process.env.NEXT_PUBLIC_STOREFRONT_DISPLAY_LANGUAGES ?? process.env.NEXT_PUBLIC_STOREFRONT_LOCALES,
+);
 for (const slug of enabled) {
 	if (!isDefined(slug)) {
 		errors.push(
-			`NEXT_PUBLIC_STOREFRONT_LOCALES contains "${slug}", which is not in LOCALE_DEFINITIONS ` +
+			`NEXT_PUBLIC_STOREFRONT_DISPLAY_LANGUAGES contains "${slug}", which is not in LOCALE_DEFINITIONS ` +
 				`(defined: ${definedSlugs.join(", ")}). It would be dropped silently.`,
 		);
 	}
@@ -66,15 +69,14 @@ if (defaultLocale && !isDefined(defaultLocale)) {
 	);
 }
 
-// The effective default (env value when defined, else the hard-coded "en" in locale.ts) must be
-// enabled: middleware redirects non-enabled locale slugs to the default, so a disabled default
-// redirects to itself forever.
+// The effective default (env value when defined, else the hard-coded "en" in locale.ts) is the
+// last-resort display language, so it must be one the storefront renders.
 const effectiveDefault = defaultLocale && isDefined(defaultLocale) ? defaultLocale : "en";
 if (enabled.length > 0 && !enabled.includes(effectiveDefault)) {
 	errors.push(
 		`Default locale "${effectiveDefault}"${defaultLocale ? "" : " (fallback; NEXT_PUBLIC_DEFAULT_LOCALE unset)"} ` +
-			`is not in NEXT_PUBLIC_STOREFRONT_LOCALES (${enabled.join(", ")}). Middleware would redirect ` +
-			`/${effectiveDefault}/… to itself in a loop.`,
+			`is not in NEXT_PUBLIC_STOREFRONT_DISPLAY_LANGUAGES (${enabled.join(", ")}). It is the fallback ` +
+			`display language, so it must be enabled.`,
 	);
 }
 
@@ -84,7 +86,7 @@ if (enabled.length > 0 && !enabled.includes(effectiveDefault)) {
 if (enabled.length > 0) {
 	const disabled = definedSlugs.filter((slug) => !enabled.includes(slug));
 	if (disabled.length > 0) {
-		info.push(`Defined but not enabled in NEXT_PUBLIC_STOREFRONT_LOCALES: ${disabled.join(", ")}`);
+		info.push(`Defined but not enabled in NEXT_PUBLIC_STOREFRONT_DISPLAY_LANGUAGES: ${disabled.join(", ")}`);
 	}
 }
 

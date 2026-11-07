@@ -91,7 +91,7 @@ const DESCRIPTIONS = {
 	"ui-images.md":
 		"Images in Paper — Saleor already produces optimized thumbnails, so Vercel's optimizer must not redo that work. Covers the thumbnail ladder, remotePatterns allowlisting, minimumCacheTTL, deviceSizes/imageSizes budgets, and mandatory `sizes` on every fill image. Use when adding an <Image>, tuning image cost, debugging oversized requests, or touching next.config.js images config.",
 	"ui-channels.md":
-		"Channels & multi-currency: URL channel segment, STOREFRONT_CHANNELS allowlist, the purchasability/fulfillment model, channel selector. Use when configuring channels or debugging 'product not purchasable'.",
+		"Channels & multi-currency: channels and locale pairs from Saleor channel metadata (ADR 0008), the purchasability/fulfillment model, header market selector. Use when configuring channels or debugging 'product not purchasable'.",
 	"ui-locale-routing.md":
 		"Locale + channel URL routing /{locale}/{channel}/…: locale config, allowlisted pairs, per-locale cache keys, region picker, GraphQL languageCode. Use when touching locale/market URLs or i18n routing.",
 	"ui-i18n.md":

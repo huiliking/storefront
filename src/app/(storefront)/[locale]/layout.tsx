@@ -13,7 +13,6 @@ import {
 	isStorefrontLocaleSlug,
 	resolveLocaleFromSlug,
 } from "@/config/locale";
-import { PersistBrowseLocaleCookie } from "@/ui/components/persist-browse-locale-cookie";
 import { getRootHtmlFontProps } from "@/lib/fonts";
 import { saleorMediaPreconnectOrigin } from "@/lib/images";
 import { speedInsightsSampleRate } from "@/lib/speed-insights";
@@ -74,8 +73,8 @@ export default async function LocaleRootLayout({
 	children: ReactNode;
 	params: Promise<{ locale: string }>;
 }) {
-	const { locale } = await params;
-	const localeSlug = isStorefrontLocaleSlug(locale) ? locale : getDefaultLocaleSlug();
+	// URL locale = market locale (validated in `[channel]/layout`); text follows the display language.
+	await params;
 	const displayLanguage = await getDisplayLanguage();
 	const explicitDisplayLanguage = await getExplicitDisplayLanguage();
 	const htmlLang = resolveLocaleFromSlug(displayLanguage).htmlLang;
@@ -93,7 +92,6 @@ export default async function LocaleRootLayout({
 			{mediaOrigin && <link rel="preconnect" href={mediaOrigin} />}
 			<body className="min-h-dvh font-sans">
 				<NextIntlClientProvider locale={displayLanguage} messages={messages} timeZone={getDefaultTimeZone()}>
-					<PersistBrowseLocaleCookie locale={localeSlug} />
 					<ExplicitDisplayLanguageProvider value={explicitDisplayLanguage}>
 						{children}
 					</ExplicitDisplayLanguageProvider>

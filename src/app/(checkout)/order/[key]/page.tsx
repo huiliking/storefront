@@ -5,11 +5,11 @@ import { invariant } from "ts-invariant";
 import { OrderConfirmationApp } from "@/checkout/order-confirmation-app";
 import { fetchCheckoutUserOnServer } from "@/checkout/lib/server/fetch-checkout-user";
 import { loadOrderView, type LoadedOrderView } from "@/checkout/lib/server/load-order-view";
-import type { LocaleSlug } from "@/config/locale";
-import { resolveBrowseLocaleForCheckout } from "@/lib/browse-locale-server";
 import { loadCheckoutMessages } from "@/i18n/load-messages";
 import { OrderConfirmationRouteFallback } from "@/checkout/views/order-confirmation/order-confirmation-route-fallback";
 import { formatPageTitle } from "@/config/brand";
+import { resolveCheckoutLanguages, type CheckoutLanguages } from "@/lib/checkout-languages";
+import { storefrontHrefWithLanguage } from "@/lib/display-language-server";
 
 /** Per-request access check — no static shell worth showing first. */
 export const instant = false;
@@ -28,15 +28,15 @@ export default async function OrderViewPage(props: {
 
 	const [{ key: rawKey }, searchParams] = await Promise.all([props.params, props.searchParams]);
 	const key = decodeURIComponent(rawKey);
-	const storefrontLocale = await resolveBrowseLocaleForCheckout(searchParams.locale);
-	const loaded = await loadOrderView(key, storefrontLocale);
+	const languages = await resolveCheckoutLanguages(searchParams.locale);
+	const loaded = await loadOrderView(key, languages.displayLanguage);
 
 	if (loaded === "find-by-number") {
 		const findParams = new URLSearchParams({ number: key });
 		if (searchParams.locale) {
 			findParams.set("locale", searchParams.locale);
 		}
-		redirect(`/order/find?${findParams.toString()}`);
+		redirect(await storefrontHrefWithLanguage(`/order/find?${findParams.toString()}`));
 	}
 
 	if (loaded === "unavailable") {
@@ -49,21 +49,21 @@ export default async function OrderViewPage(props: {
 
 	return (
 		<Suspense fallback={<OrderConfirmationRouteFallback />}>
-			<OrderViewApp loaded={loaded} storefrontLocale={storefrontLocale} />
+			<OrderViewApp loaded={loaded} languages={languages} />
 		</Suspense>
 	);
 }
 
 async function OrderViewApp({
 	loaded,
-	storefrontLocale,
+	languages,
 }: {
 	loaded: LoadedOrderView;
-	storefrontLocale: LocaleSlug;
+	languages: CheckoutLanguages;
 }) {
 	const [initialUser, messages] = await Promise.all([
 		fetchCheckoutUserOnServer(),
-		loadCheckoutMessages(storefrontLocale),
+		loadCheckoutMessages(languages.displayLanguage),
 	]);
 
 	return (
@@ -72,7 +72,7 @@ async function OrderViewApp({
 			initialOrder={loaded.order}
 			access={loaded.access}
 			initialUser={initialUser}
-			storefrontLocale={storefrontLocale}
+			languages={languages}
 			messages={messages}
 		/>
 	);

@@ -2,10 +2,10 @@
 
 import type { useRouter } from "next/navigation";
 
-import { resolveBrowseLocaleSlugWithFallback } from "@/lib/browse-locale";
 import { bumpChromeVersion } from "@/lib/chrome-sync";
 import { buildStorefrontPath } from "@/lib/storefront-path";
 import { withCurrentDisplayLanguage } from "@/lib/display-language-link";
+import { getDefaultLocaleSlug, isLocaleSlug } from "@/config/locale";
 
 type Router = ReturnType<typeof useRouter>;
 
@@ -59,6 +59,6 @@ export function navigateToStorefrontHome(channel: string, locale?: string) {
 		return;
 	}
 
-	const resolvedLocale = resolveBrowseLocaleSlugWithFallback(locale);
+	const resolvedLocale = locale && isLocaleSlug(locale) ? locale : getDefaultLocaleSlug();
 	window.location.assign(withCurrentDisplayLanguage(buildStorefrontPath(resolvedLocale, channel)));
 }

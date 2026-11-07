@@ -2,9 +2,9 @@
 
 import Link from "@/ui/atoms/storefront-link";
 import { type ReactNode } from "react";
-import { isLocaleSlug, type LocaleSlug } from "@/config/locale";
-import { resolveBrowseLocaleSlugWithFallback } from "@/lib/browse-locale";
+import { getDefaultLocaleSlug, isLocaleSlug, type LocaleSlug } from "@/config/locale";
 import { buildStorefrontPath } from "@/lib/storefront-path";
+import { useWithDisplayLanguage } from "@/ui/atoms/display-language-context";
 
 type StorefrontHomeLinkProps = {
 	locale?: string | null;
@@ -18,14 +18,15 @@ type StorefrontHomeLinkProps = {
  * is a full document load — soft App Router links restore a stale header from Router Cache.
  */
 export function StorefrontHomeLink({ locale, channel, className, children }: StorefrontHomeLinkProps) {
+	// Keep an explicit display-language choice (`?lang=`) on the way back to the storefront.
+	const withLang = useWithDisplayLanguage();
 	if (channel) {
 		// Trust explicit locale from RSC (validated server-side) — use isLocaleSlug, not the
 		// deployment allowlist, so client href matches SSR on checkout and other surfaces.
-		const resolvedLocale: LocaleSlug =
-			locale && isLocaleSlug(locale) ? locale : resolveBrowseLocaleSlugWithFallback(locale);
+		const resolvedLocale: LocaleSlug = locale && isLocaleSlug(locale) ? locale : getDefaultLocaleSlug();
 
 		return (
-			<a href={buildStorefrontPath(resolvedLocale, channel)} className={className}>
+			<a href={withLang(buildStorefrontPath(resolvedLocale, channel))} className={className}>
 				{children}
 			</a>
 		);

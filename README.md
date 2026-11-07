@@ -1,4 +1,4 @@
-[![Deploy with Vercel](https://vercel.com/button)](<https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fsaleor%2Fstorefront&env=NEXT_PUBLIC_SALEOR_API_URL%2CNEXT_PUBLIC_DEFAULT_CHANNEL%2CNEXT_PUBLIC_DEFAULT_LOCALE%2CNEXT_PUBLIC_STOREFRONT_LOCALES&envDescription=Your%20Saleor%20API%20URL%20is%20the%20GraphQL%20endpoint%20of%20your%20instance%20(e.g.%20https%3A%2F%2Fyour-instance.saleor.cloud%2Fgraphql%2F).%20The%20channel%20slug%20can%20be%20found%20in%20Saleor%20Dashboard%20under%20Configuration%20%3E%20Channels%20(e.g.%20default-channel).%20For%20multi-channel%2C%20set%20STOREFRONT_CHANNELS%20(e.g.%20us%2Cuk)%20and%20optionally%20SALEOR_APP_TOKEN%20for%20the%20footer%20selector.%20For%20locales%2C%20set%20NEXT_PUBLIC_DEFAULT_LOCALE%20(e.g.%20en)%20and%20NEXT_PUBLIC_STOREFRONT_LOCALES%20(e.g.%20en%2Cpl%2Cde%2Cfr%2Cfi%2Cnb).&envLink=https%3A%2F%2Fgithub.com%2Fsaleor%2Fstorefront%23environment-variables&project-name=my-saleor-storefront&repository-name=my-saleor-storefront&demo-title=Saleor%20Next.js%20Storefront&demo-description=Starter%20pack%20for%20building%20performant%20e-commerce%20experiences%20with%20Saleor.&demo-url=https%3A%2F%2Fstorefront.saleor.io%2F&demo-image=https%3A%2F%2Fstorefront-d5h86wzey-saleorcommerce.vercel.app%2Fopengraph-image.png%3F4db0ee8cf66e90af>)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fsaleor%2Fstorefront&env=NEXT_PUBLIC_SALEOR_API_URL%2CSALEOR_APP_TOKEN%2CNEXT_PUBLIC_DEFAULT_LOCALE%2CNEXT_PUBLIC_STOREFRONT_DISPLAY_LANGUAGES&envDescription=Your%20Saleor%20API%20URL%20is%20the%20GraphQL%20endpoint%20of%20your%20instance%20%28e.g.%20https%3A%2F%2Fyour-instance.saleor.cloud%2Fgraphql%2F%29.%20SALEOR_APP_TOKEN%20is%20a%20zero-permission%20app%20token%20that%20reads%20the%20channel%20list%3B%20channels%20are%20configured%20in%20Saleor%20channel%20metadata%20%28storefront.locales%29.%20For%20display%20languages%2C%20set%20NEXT_PUBLIC_DEFAULT_LOCALE%20%28e.g.%20en%29%20and%20NEXT_PUBLIC_STOREFRONT_DISPLAY_LANGUAGES%20%28e.g.%20en%2Cpl%2Cde%2Cfr%2Cfi%2Cnb%29.&envLink=https%3A%2F%2Fgithub.com%2Fsaleor%2Fstorefront%23environment-variables&project-name=my-saleor-storefront&repository-name=my-saleor-storefront&demo-title=Saleor%20Next.js%20Storefront&demo-description=Starter%20pack%20for%20building%20performant%20e-commerce%20experiences%20with%20Saleor.&demo-url=https%3A%2F%2Fstorefront.saleor.io%2F&demo-image=https%3A%2F%2Fstorefront-d5h86wzey-saleorcommerce.vercel.app%2Fopengraph-image.png%3F4db0ee8cf66e90af)
 
 <img width="1920" height="1080" alt="saleor-storefront-paper-fin" src="https://github.com/user-attachments/assets/a8e37c20-35c8-42e0-a9c5-5c0b6097b921" />
 
@@ -64,7 +64,7 @@ One codebase, many markets. Browse URLs are **`/{locale}/{channel}/…`** — e.
 - **Seven built-in locales** — `en`, `pl`, `de`, `fr`, `fi`, `nb`, `ko` (extend via `LOCALE_DEFINITIONS` in `src/config/locale.ts`)
 - **Optional translated URL slugs** — Saleor Dashboard can set per-language handles for products, categories, collections, and pages; Paper resolves, redirects, links, and hreflang accordingly ([ADR 0004](docs/adr/0004-translatable-slugs.md))
 
-**Storefront channels are explicit.** Saleor may have many channels (B2B, wholesale, internal regions); Paper only exposes the slugs you configure via `STOREFRONT_CHANNELS`. Disallowed channel URLs return 404. For a single-channel store, set `NEXT_PUBLIC_DEFAULT_CHANNEL` only—the footer channel selector is hidden automatically.
+**Channels are managed in Saleor, not `.env`** ([ADR 0008](docs/adr/0008-saleor-owned-channels-and-display-language.md)). A channel appears on the storefront only when it is active and lists market locales in its metadata (`storefront.locales`), so B2B, wholesale and internal channels stay hidden. Adding, deactivating or re-pairing a channel is a Dashboard edit — no rebuild. Page text follows a separate **display language** (`?lang=` → browser → market locale); the header has a market selector (left) and a language picker (right).
 
 **Developer docs:** [`docs/international-storefront.md`](docs/international-storefront.md) · ADRs [0001](docs/adr/0001-locale-channel-url-routing.md) / [0002](docs/adr/0002-cms-copy-vs-code-owned-ui-strings.md) / [0004](docs/adr/0004-translatable-slugs.md) · skills [`ui-locale-routing`](skills/saleor-paper-storefront/rules/ui-locale-routing.md) / [`ui-i18n`](skills/saleor-paper-storefront/rules/ui-i18n.md)
 
@@ -319,21 +319,15 @@ Edit `.env` with your Saleor instance details:
 
 ```bash
 NEXT_PUBLIC_SALEOR_API_URL=https://your-instance.saleor.cloud/graphql/
-NEXT_PUBLIC_DEFAULT_CHANNEL=default-channel  # Your Saleor channel slug
+SALEOR_APP_TOKEN=...  # Required, server-side only — a zero-permission app token reads the channel list
+NEXT_PUBLIC_STOREFRONT_DISPLAY_LANGUAGES=en,pl,de,fr,fi,nb,ja,ko  # Languages pages can be shown in
 ```
 
-**Multi-channel** (recommended — explicit allowlist):
-
-```bash
-STOREFRONT_CHANNELS=us,uk,eu
-NEXT_PUBLIC_DEFAULT_CHANNEL=us
-NEXT_PUBLIC_STOREFRONT_LOCALES=en,pl,de,fr,fi,nb,ja,ko  # URL locale slugs
-SALEOR_APP_TOKEN=...  # Server-side only — footer currency selector metadata
-```
-
-> **Finding your channel slug:** In Saleor Dashboard → Configuration → Channels → copy the slug
-
-> **Note:** `SALEOR_APP_TOKEN` alone no longer auto-discovers every Saleor channel. Set `STOREFRONT_CHANNELS` or opt in with `STOREFRONT_DISCOVER_CHANNELS=true` (see [Environment Variables](#environment-variables)).
+**Channels** are configured in Saleor, per channel (Dashboard → Configuration → Channels → channel → `</>`
+public metadata): `storefront.locales = en,ja` (opt-in), optional `storefront.defaultLocale`, and
+`storefront.default = true` on the channel `/` should open. Add a `CHANNEL_*` webhook to `/api/revalidate`
+(app with `MANAGE_CHANNELS`, secret = `SALEOR_WEBHOOK_SECRET`) so changes go live without a rebuild — see
+[`ui-channels`](skills/saleor-paper-storefront/rules/ui-channels.md).
 
 ### 3. Run
 
@@ -405,22 +399,16 @@ Symlinks the project skill into `.agents/skills/`, then runs `npx skills experim
 ```env
 # Required
 NEXT_PUBLIC_SALEOR_API_URL=https://your-instance.saleor.cloud/graphql/
-NEXT_PUBLIC_DEFAULT_CHANNEL=default-channel          # Fallback channel; root "/" redirects here
-
-# Multi-channel (recommended)
-STOREFRONT_CHANNELS=us,uk,eu                         # Comma-separated allowlist — routes, revalidation, footer
+SALEOR_APP_TOKEN=                                    # Server-side: reads channels + metadata (zero-permission app is enough)
 
 # Optional
 NEXT_PUBLIC_STOREFRONT_URL=http://localhost:3000/    # Canonical URLs, OG images, and redirect allowlist
 NEXT_PUBLIC_CHECKOUT_URL=                            # Optional checkout origin and redirect allowlist
 ALLOWED_EXTRA_ORIGINS=                               # Optional extra redirect origins - see ./docs/configuration/allowed-origins.md
-NEXT_PUBLIC_DEFAULT_LOCALE=en                        # Default URL locale slug
-NEXT_PUBLIC_STOREFRONT_LOCALES=en,pl,de,fr,fi,nb,ja,ko  # Enabled locale slugs
+NEXT_PUBLIC_DEFAULT_LOCALE=en                        # Last-resort display language
+NEXT_PUBLIC_STOREFRONT_DISPLAY_LANGUAGES=en,pl,de,fr,fi,nb,ja,ko  # Display languages (translation only)
 REVALIDATE_SECRET=                                   # Manual cache invalidation (GET /api/revalidate)
-SALEOR_WEBHOOK_SECRET=                               # Webhook HMAC verification
-SALEOR_APP_TOKEN=                                    # Server-side: footer channel metadata (never exposed to client)
-STOREFRONT_DISCOVER_CHANNELS=true                    # Opt-in: discover ALL active Saleor channels from API
-                                                     # (not recommended when Saleor has many channels; prefer STOREFRONT_CHANNELS)
+SALEOR_WEBHOOK_SECRET=                               # Webhook HMAC verification (incl. CHANNEL_* events)
 CONTENT_PROVIDER=saleor                              # Default: Saleor Models. Set `code` for code defaults only.
 
 # Cost controls — each trades money against freshness. See .env.example for the full reasoning.
@@ -430,11 +418,8 @@ NEXT_IMAGE_MIN_CACHE_TTL=2678400                     # 31 days; lower it if the 
 SALEOR_MIN_REQUEST_DELAY_MS=0                        # Runtime GraphQL throttle; defaults to 200 during `next build`
 ```
 
-**Channel resolution order** (`getStorefrontChannelSlugs`):
-
-1. `STOREFRONT_CHANNELS` — explicit allowlist _(recommended)_
-2. `STOREFRONT_DISCOVER_CHANNELS=true` + `SALEOR_APP_TOKEN` — all active channels from API
-3. `NEXT_PUBLIC_DEFAULT_CHANNEL` only — single-channel storefront
+**Channels** come only from Saleor (`getStorefrontChannels()`): active channels with `storefront.locales` metadata.
+There is no `.env` channel list or discovery switch ([ADR 0008](docs/adr/0008-saleor-owned-channels-and-display-language.md)).
 
 ---
 

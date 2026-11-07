@@ -3,10 +3,6 @@
 import Link from "@/ui/atoms/storefront-link";
 import { Search, Home } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { DefaultChannelSlug } from "@/app/config";
-import { isStorefrontLocaleSlug } from "@/config/locale";
-import { useStorefrontParams } from "@/hooks/use-storefront-href";
-import { buildStorefrontPath } from "@/lib/storefront-path";
 import { buttonClassName } from "@/ui/components/ui/button";
 
 /**
@@ -15,13 +11,9 @@ import { buttonClassName } from "@/ui/components/ui/button";
  */
 export function NotFoundContent() {
 	const t = useTranslations("common.notFound");
-	const { locale } = useStorefrontParams();
-	// The URL that 404'd may carry a bogus channel, so link via the default channel; keep the
-	// locale only when it is served. Otherwise `/` lets middleware pick the defaults.
-	const productsHref =
-		locale && DefaultChannelSlug && isStorefrontLocaleSlug(locale)
-			? buildStorefrontPath(locale, DefaultChannelSlug, "/products")
-			: "/";
+	// The URL that 404'd may be a bogus locale/channel pair, and channels live in Saleor (no
+	// client-side list) — so link to `/`, which redirects to Saleor's default storefront channel.
+	const productsHref = "/";
 
 	return (
 		<div className="flex min-h-[70vh] flex-col items-center justify-center px-4 py-16">

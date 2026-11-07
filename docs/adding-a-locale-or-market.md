@@ -2,14 +2,15 @@
 
 Paper separates two things that are easy to conflate:
 
-| Concept                         | What it controls                                                     | Where it lives                                     | Example                     |
-| ------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------- | --------------------------- |
-| **Locale** (language variant)   | Text and formatting: translations, `<html lang>`, date/number format | Storefront config + Saleor **translations**        | `fr-ca` → Canadian French   |
-| **Market** (Saleor **channel**) | Commerce: currency, prices, tax, shipping, stock                     | Saleor **channels** + storefront channel allowlist | `channel-cad` → Canada, CAD |
+| Concept                         | What it controls                                                     | Where it lives                                    | Example                     |
+| ------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------- | --------------------------- |
+| **Locale** (language variant)   | Text and formatting: translations, `<html lang>`, date/number format | Storefront config + Saleor **translations**       | `fr-ca` → Canadian French   |
+| **Market** (Saleor **channel**) | Commerce: currency, prices, tax, shipping, stock                     | Saleor **channels** + channel metadata (ADR 0008) | `channel-cad` → Canada, CAD |
 
 A locale never changes the price or currency; a channel never changes the language.
-They are combined in the URL (`/{locale}/{channel}/…`, see ADR 0001) and optionally
-paired with `NEXT_PUBLIC_STOREFRONT_LOCALE_CHANNELS`.
+The URL `/{locale}/{channel}/…` carries a **market locale** paired with the channel in Saleor
+(`storefront.locales` channel metadata). Page text follows a separate **display language**
+(`?lang=` → browser → market locale) — see ADR 0008.
 
 ---
 
@@ -48,12 +49,12 @@ Example: Canadian French next to existing `fr`.
    Missing aliases don't error; hreflang and language-switch links for that locale just fall
    back to the primary slug.
 
-5. **Enable it for the deployment:** add the slug to `NEXT_PUBLIC_STOREFRONT_LOCALES` in `.env`.
-   Entries not defined in step 2 are dropped silently. Optionally pair it with a market in
-   `NEXT_PUBLIC_STOREFRONT_LOCALE_CHANNELS`.
+5. **Enable it as a display language:** add the slug to `NEXT_PUBLIC_STOREFRONT_DISPLAY_LANGUAGES`
+   in `.env` (entries not defined in step 2 are dropped with a check-locales error). To use it as
+   a **market** locale in URLs, add it to a channel's `storefront.locales` metadata in the
+   Dashboard — no rebuild for that part.
 
-6. **Rebuild** the storefront. `NEXT_PUBLIC_*` values are inlined at build time — a restart
-   alone keeps the old list.
+6. **Rebuild** the storefront (code, message bundle and `NEXT_PUBLIC_*` list are build-time).
 
 7. **Translate the data in Saleor** (Dashboard → Translations → choose the language), for every
    entity type the shop uses — products, variants, categories, collections, menus, attributes,
@@ -69,7 +70,7 @@ Example: Canadian French next to existing `fr`.
    - name, description, title and meta description in the new language;
    - URL switches to the translated slug;
    - `<html lang>` matches `htmlLang`;
-   - the footer picker lists the language;
+   - the header language picker lists the language; `?lang={new-locale}` switches page text;
    - hreflang contains the new locale with its translated slug;
    - existing locales still show their own text (regression check).
 
@@ -85,20 +86,20 @@ Example: Canada, priced in CAD.
 
 2. **List products in the channel** with a price for each variant, and publish them.
 
-3. **Expose it in the storefront:** add the channel slug to `STOREFRONT_CHANNELS` in `.env`
-   (see `src/config/channels.ts` for the resolution order). Optionally pair locales with it in
-   `NEXT_PUBLIC_STOREFRONT_LOCALE_CHANNELS`.
+3. **Expose it in the storefront:** on the channel, add public metadata `storefront.locales`
+   (e.g. `fr-ca,en-ca`) and optionally `storefront.defaultLocale` (also the order/account email
+   language). Channels without `storefront.locales` stay hidden.
 
-4. **Rebuild** the storefront (same build-time rule as A6).
+4. **No rebuild:** the `CHANNEL_METADATA_UPDATED` webhook clears the storefront's channel cache
+   (see `ui-channels.md`); without the webhook, the 15-minute backstop applies.
 
-5. **Verify:** the footer picker shows a market section, prices render in the channel currency,
-   and switching markets with a cart shows the cart-reset confirmation.
+5. **Verify:** the header market selector lists the channel and its locales, prices render in the
+   channel currency, and switching markets with a cart shows the cart-reset confirmation.
 
 ---
 
 ## Combining both
 
 A Canadian launch usually needs **both**: locale `fr-ca` (and maybe `en-ca`) for the language,
-and a CAD channel for the prices. Pair them with
-`NEXT_PUBLIC_STOREFRONT_LOCALE_CHANNELS=fr-ca:channel-cad,en-ca:channel-cad` if those locales
-should only be offered in that market.
+and a CAD channel for the prices. Pair them in Saleor with `storefront.locales = fr-ca,en-ca` on the
+CAD channel (and `storefront.defaultLocale = fr-ca` if order emails must be French, e.g. Québec).

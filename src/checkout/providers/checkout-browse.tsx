@@ -1,30 +1,45 @@
 "use client";
 
 import { createContext, type ReactNode, use, useEffect } from "react";
-import { resolveBrowseLocaleSlugWithFallback, writeBrowseLocaleCookieClient } from "@/lib/browse-locale";
-import { getLocaleDefinition, type LocaleSlug } from "@/config/locale";
+import { getDefaultLocaleSlug, getLocaleDefinition, type LocaleSlug } from "@/config/locale";
+import type { CheckoutLanguages } from "@/lib/checkout-languages";
+import { ExplicitDisplayLanguageProvider } from "@/ui/atoms/display-language-context";
 
-const CheckoutBrowseContext = createContext<LocaleSlug | null>(null);
+const CheckoutBrowseContext = createContext<CheckoutLanguages | null>(null);
 
 type CheckoutBrowseProviderProps = {
-	locale: LocaleSlug;
+	languages: CheckoutLanguages;
 	children: ReactNode;
 };
 
-/** Browse locale from RSC (`browse-locale` cookie / `?locale=`) — stable on SSR and hydration. */
-export function CheckoutBrowseProvider({ locale, children }: CheckoutBrowseProviderProps) {
+/**
+ * Checkout / order languages from RSC (ADR 0008 — no cookie): market locale for links back to the
+ * storefront, display language for `<html lang>`, explicit `?lang=` carried onto those links.
+ */
+export function CheckoutBrowseProvider({ languages, children }: CheckoutBrowseProviderProps) {
 	useEffect(() => {
-		const htmlLang = getLocaleDefinition(locale)?.htmlLang;
+		// The checkout root layout is static (default `lang`); sync to the display language.
+		const htmlLang = getLocaleDefinition(languages.displayLanguage)?.htmlLang;
 		if (htmlLang) {
 			document.documentElement.lang = htmlLang;
 		}
-		writeBrowseLocaleCookieClient(locale);
-	}, [locale]);
+	}, [languages.displayLanguage]);
 
-	return <CheckoutBrowseContext value={locale}>{children}</CheckoutBrowseContext>;
+	return (
+		<CheckoutBrowseContext value={languages}>
+			<ExplicitDisplayLanguageProvider value={languages.explicitDisplayLanguage}>
+				{children}
+			</ExplicitDisplayLanguageProvider>
+		</CheckoutBrowseContext>
+	);
 }
 
+/** Market locale for links back to the storefront (`/{locale}/{channel}`). */
 export function useCheckoutBrowseLocale(): LocaleSlug {
-	const locale = use(CheckoutBrowseContext);
-	return locale ?? resolveBrowseLocaleSlugWithFallback();
+	return use(CheckoutBrowseContext)?.marketLocale ?? getDefaultLocaleSlug();
+}
+
+/** Saleor's default storefront channel — for links when the checkout has no channel. */
+export function useCheckoutDefaultChannel(): string | null {
+	return use(CheckoutBrowseContext)?.defaultChannel ?? null;
 }

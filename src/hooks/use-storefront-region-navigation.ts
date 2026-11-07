@@ -2,7 +2,7 @@
 
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { isLocaleSlug, isStorefrontLocaleSlug } from "@/config/locale";
+import { isLocaleSlug } from "@/config/locale";
 import { useCatalogIdentity } from "@/lib/catalog/catalog-identity-bridge";
 import {
 	appendSearchParams,
@@ -10,7 +10,6 @@ import {
 	safeLocaleSwitchSuffixWithoutIdentity,
 } from "@/lib/catalog/catalog-identity";
 import { hasCartCookieForChannel } from "@/lib/cart-channel-cookie";
-import { writeBrowseLocaleCookieClient } from "@/lib/browse-locale";
 import {
 	buildStorefrontPath,
 	parseStorefrontPathname,
@@ -38,10 +37,6 @@ export function useStorefrontRegionNavigation() {
 
 	function navigateToLocale(newLocale: string) {
 		if (!channel || !isLocaleSlug(newLocale)) return;
-
-		if (isStorefrontLocaleSlug(newLocale)) {
-			writeBrowseLocaleCookieClient(newLocale);
-		}
 
 		// A language switch never changes the market (ADR 0008): the picker only offers locales
 		// Saleor pairs with the current channel.

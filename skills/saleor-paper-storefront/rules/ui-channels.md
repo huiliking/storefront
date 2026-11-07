@@ -1,6 +1,6 @@
 ---
 name: ui-channels
-description: Channels & multi-currency: URL channel segment, STOREFRONT_CHANNELS allowlist, the purchasability/fulfillment model, channel selector. Use when configuring channels or debugging 'product not purchasable'.
+description: Channels & multi-currency: channels and locale pairs from Saleor channel metadata (ADR 0008), the purchasability/fulfillment model, header market selector. Use when configuring channels or debugging 'product not purchasable'.
 ---
 
 # Channels & Multi-Currency
@@ -12,12 +12,13 @@ Configure multi-channel and multi-currency support. This storefront supports mul
 ## How Channels Work
 
 ```
-URL: /uk/products/...  →  Channel "uk" (GBP)
-URL: /us/products/...  →  Channel "us" (USD)
+URL: /en/uk/products/...  →  market locale "en", channel "uk" (GBP)
+URL: /fr-ca/ca/products/... →  market locale "fr-ca", channel "ca" (CAD)
 ```
 
+- Channels and their locale pairs are managed in Saleor (channel metadata) — see ADR 0008
 - Currency comes from the channel settings in Saleor
-- Channel selector appears in the footer (shows currency codes)
+- The market selector sits in the header, left of the nav (channel + market locale)
 - Checkout inherits the channel from where the cart was created
 - Blank checkout address forms use the channel’s **default country** (`channel.defaultCountry`, via `SALEOR_APP_TOKEN` / `ChannelsList`) when that country is shippable — not the first alphabetically listed country
 
@@ -61,64 +62,49 @@ The same product can be purchasable in one channel and not another because:
 - **Stock levels** vary per warehouse
 - **Pricing** may only be set in certain channels
 
-## Environment Setup
+## Channels come from Saleor (ADR 0008)
 
-### Required for Channel Selector
+There is **no `.env` channel list** and no build-time channel data. The storefront reads Saleor's channel
+list at runtime (`getStorefrontChannels()`, `src/lib/channels/get-storefront-channels.ts`) and exposes a channel
+only when it is **active** and lists market locales in its public metadata
+(Dashboard → Configuration → Channels → channel → `</>`):
 
-The channel selector requires `SALEOR_APP_TOKEN` to fetch the channels list.
+| Key                        | Example    | Meaning                                                                               |
+| -------------------------- | ---------- | ------------------------------------------------------------------------------------- |
+| `storefront.locales`       | `fr,fr-ca` | Market locales paired with the channel. **Opt-in**: without it the channel is hidden. |
+| `storefront.defaultLocale` | `fr`       | Locale used when entering the channel; also the order/account document language.      |
+| `storefront.default`       | `true`     | The channel `/` redirects to (one channel).                                           |
+
+Keys are trimmed; unknown `storefront.*` keys and unknown locale slugs are logged as `[Channels]` warnings.
+
+### App token (required)
 
 ```env
 # .env.local (keep secret, never commit)
 SALEOR_APP_TOKEN=your-app-token
 ```
 
-**Security:** This token is used server-side only. Keep it in `.env.local` for development and set it as a secret environment variable in production (e.g., Vercel environment variables).
+Listing channels needs `AUTHENTICATED_APP` only — create a **zero-permission** app (Dashboard → Extensions →
+Add extension → "Provide details manually"), then a token. Server-side only, never `NEXT_PUBLIC_`. Without it the
+storefront fails loudly (no fallback list).
 
-**Without this token:** Channel metadata cannot be fetched. Routes still come from `STOREFRONT_CHANNELS` in `src/config/channels.ts`, but the footer channel selector does not render (`shouldFetchChannelMetadata` needs more than one channel and the token).
+### Changes without a rebuild
 
-### Creating the App Token
+Channel data is cached under the `channels` tag (15-minute backstop). Create a **separate** app with only
+`MANAGE_CHANNELS` and a webhook to `/api/revalidate` for `CHANNEL_CREATED / UPDATED / DELETED / STATUS_CHANGED /
+METADATA_UPDATED` with a secret key = `SALEOR_WEBHOOK_SECRET`. A Dashboard edit is then live on the next request.
 
-The `channels` query requires an authenticated app token. No specific permission is needed just to list channels.
+### Where channels are enforced
 
-1. Open **Saleor Dashboard**
-2. Go to **Extensions → Add extension → "Provide details manually"**
-3. Fill in:
-   - Name: `Storefront` (or any name)
-   - Permissions: none required for channel listing
-4. Save and copy the generated token
-5. Add to `.env.local` as `SALEOR_APP_TOKEN`
+| Location                                             | Behavior                                                                |
+| ---------------------------------------------------- | ----------------------------------------------------------------------- |
+| `src/app/(storefront)/[locale]/[channel]/layout.tsx` | `notFound()` unless Saleor pairs the locale with the channel            |
+| `src/app/(root)/page.tsx`                            | `/` → `storefront.default` channel in its default locale                |
+| `src/app/api/revalidate/route.ts`                    | `CHANNEL_*` clears the list; menu/page/product invalidation per channel |
+| `src/ui/components/market-selector.tsx`              | Header market selector (channels × market locales)                      |
+| `src/lib/seo/hreflang.ts`                            | hreflang alternates = Saleor pairs                                      |
 
-## Storefront Channel Allowlist
-
-Not every Saleor channel should become a storefront route. Use an explicit allowlist in production:
-
-```env
-# Recommended — only these channels get /{channel}/... routes
-STOREFRONT_CHANNELS=us,uk
-
-# Default channel (must be in allowlist when allowlist is set)
-NEXT_PUBLIC_DEFAULT_CHANNEL=us
-
-# Optional — discover additional channels from Saleor API at build time
-# Requires SALEOR_APP_TOKEN; merged with allowlist, not a replacement
-STOREFRONT_DISCOVER_CHANNELS=true
-```
-
-**Resolution order** (`src/lib/channel-slugs.ts` → `getStorefrontChannelSlugs()`):
-
-1. `STOREFRONT_CHANNELS` — comma-separated allowlist (recommended)
-2. If `STOREFRONT_DISCOVER_CHANNELS=true` — slugs from `getCachedChannelsList()` (`"use cache"`; required for PPR builds)
-3. Fallback — `NEXT_PUBLIC_DEFAULT_CHANNEL` only
-
-### Where the allowlist is enforced
-
-| Location                                             | Behavior                                                |
-| ---------------------------------------------------- | ------------------------------------------------------- |
-| `src/app/(storefront)/[locale]/[channel]/layout.tsx` | `generateStaticParams` + `notFound()` for unknown slugs |
-| `src/app/api/revalidate/route.ts`                    | Path revalidation loops over allowed channels only      |
-| `src/ui/components/footer.tsx`                       | Channel selector lists allowed channels                 |
-
-See `data-caching.md` for how webhooks use `getStorefrontChannelSlugs()` during invalidation.
+See `data-caching.md` for how webhooks use the channel list during invalidation.
 
 ## Architecture
 
@@ -139,36 +125,37 @@ src/app/checkout/           # NOT under [channel]
 
 Checkout gets channel from `checkout.channel.slug` (set when cart was created).
 
-### Channel Selector
+### Market selector
 
 ```
-src/ui/components/channel-select.tsx  # The <select> component
-src/ui/components/footer.tsx          # Where it's rendered
+src/ui/components/market-selector.tsx                         # Header, left: channel + market locale
+src/app/(storefront)/[locale]/[channel]/(main)/browse-chrome-slots.tsx  # HeaderMarketSlot (Saleor data)
 ```
 
-Requires `SALEOR_APP_TOKEN` to fetch channel list via `ChannelsListDocument` query.
+The display language is a separate control (`language-picker.tsx`, header right, `?lang=`) — see
+`ui-locale-routing.md`.
 
 ## Key Files
 
-| File                                                 | Purpose                                     |
-| ---------------------------------------------------- | ------------------------------------------- |
-| `src/config/channels.ts`                             | Allowlist env parsing + validation          |
-| `src/lib/channel-slugs.ts`                           | `getStorefrontChannelSlugs()` (React.cache) |
-| `src/app/(storefront)/[locale]/[channel]/layout.tsx` | Route guard + `generateStaticParams`        |
-| `src/ui/components/channel-select.tsx`               | Channel switcher dropdown                   |
-| `src/ui/components/footer.tsx`                       | Renders channel selector                    |
-| `src/graphql/ChannelsList.graphql`                   | Query for fetching channels                 |
-| `src/app/config.ts`                                  | `DefaultChannelSlug` fallback               |
+| File                                                 | Purpose                                             |
+| ---------------------------------------------------- | --------------------------------------------------- |
+| `src/lib/channels/storefront-channels.ts`            | Metadata parser (`storefront.*` keys), pair helpers |
+| `src/lib/channels/get-storefront-channels.ts`        | `getStorefrontChannels()` — cached Saleor read      |
+| `src/lib/channels/document-language.ts`              | Channel default locale → order/account language     |
+| `src/app/(storefront)/[locale]/[channel]/layout.tsx` | Route guard                                         |
+| `src/ui/components/market-selector.tsx`              | Market selector                                     |
+| `src/graphql/ChannelsList.graphql`                   | Channel list + metadata                             |
 
 ## Locale & routing
 
-**Browse URLs:** `/{locale}/{channel}/…` — see `docs/adr/0001-locale-channel-url-routing.md`, `ui-locale-routing.md`, and `docs/international-storefront.md`. Legacy `/{channel}/…` redirects via middleware.
-
-Default locale slug: `en` (`NEXT_PUBLIC_DEFAULT_LOCALE`). Configure `NEXT_PUBLIC_STOREFRONT_LOCALES` for additional languages (built-in slugs: `en`, `pl`, `de`, `fr`, `fi`, `nb` — see `src/config/locale.ts`).
+**Browse URLs:** `/{locale}/{channel}/…` where `{locale}` is the **market locale** paired with the channel in Saleor.
+Page text follows the **display language** (`?lang=` → browser → market locale), set by
+`NEXT_PUBLIC_STOREFRONT_DISPLAY_LANGUAGES`. No redirects for unknown pairs or legacy `/{channel}/…` URLs. See
+`docs/adr/0008-saleor-owned-channels-and-display-language.md` and `ui-locale-routing.md`.
 
 ## Anti-patterns
 
-❌ **Don't expose every Saleor channel as a route** — Use `STOREFRONT_CHANNELS` allowlist in production  
+❌ **Don't expose every Saleor channel** — Only channels with `storefront.locales` metadata appear (keeps B2B/POS channels hidden)  
 ❌ **Don't assume stock means purchasable** — Warehouse must be in both the channel AND a shipping zone for that channel
 ❌ **Don't debug availability client-side only** - Check the 7-point purchasability checklist in Saleor Dashboard first
-❌ **Don't hardcode channel slugs without fallback** - Use `DefaultChannelSlug` from config
+❌ **Don't hardcode channel slugs or keep channel lists in `.env`** - Read them from `getStorefrontChannels()`
