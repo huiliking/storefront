@@ -2,6 +2,7 @@ query ProductListByCollection(
 	$slug: String!
 	$channel: String!
 	$languageCode: LanguageCodeEnum!
+	$marketLanguageCode: LanguageCodeEnum!
 	$slugLanguageCode: LanguageCodeEnum
 	$first: Int
 	$after: String
@@ -24,6 +25,9 @@ query ProductListByCollection(
 			description
 			seoDescription
 			seoTitle
+		}
+		# URL slug follows the market locale (URL), not the display language.
+		marketTranslation: translation(languageCode: $marketLanguageCode) {
 			slug
 		}
 		...CollectionLocaleSlugTranslations

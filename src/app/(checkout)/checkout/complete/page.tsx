@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { buildOrderStatusPath } from "@paper/session-bridge";
 import { formatPageTitle } from "@/config/brand";
+import { storefrontHrefWithLanguage } from "@/lib/display-language-server";
 
 export const instant = false;
 export const prefetch = "force-disabled";
@@ -22,8 +23,8 @@ export default async function OrderCompletePage(props: {
 	const orderId = searchParams.order;
 
 	if (!orderId) {
-		redirect("/order/find");
+		redirect(await storefrontHrefWithLanguage("/order/find"));
 	}
 
-	redirect(buildOrderStatusPath(orderId, searchParams.locale));
+	redirect(await storefrontHrefWithLanguage(buildOrderStatusPath(orderId, searchParams.locale)));
 }

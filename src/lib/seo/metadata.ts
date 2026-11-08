@@ -1,8 +1,8 @@
 import { type Metadata } from "next";
 import { seoConfig, getMetadataBase } from "./config";
-import { buildLocaleHreflangAlternates } from "./hreflang";
-import { getLocaleDefinition, getStorefrontLocaleSlugs, type LocaleSlug } from "@/config/locale";
-import { getConfiguredLocaleChannelPairs } from "@/config/locale-channel";
+import { buildLocaleHreflangAlternates, getMarketOgAlternateLocales } from "./hreflang";
+import { getLocaleDefinition } from "@/config/locale";
+import { getStorefrontChannels } from "@/lib/channels/get-storefront-channels";
 import { parseEditorJSToText } from "@/lib/editorjs";
 import { buildStorefrontPath } from "@/lib/storefront-path";
 
@@ -242,7 +242,7 @@ export function buildPageMetadata(options: {
 }
 
 /** Browse metadata with canonical `/{locale}/{channel}/…` URL and locale hreflang alternates. */
-export function buildBrowsePageMetadata(options: {
+export async function buildBrowsePageMetadata(options: {
 	title: string;
 	description?: string;
 	image?: string | null;
@@ -258,15 +258,18 @@ export function buildBrowsePageMetadata(options: {
 	/** See {@link buildPageMetadata} — `product` omits og:type (PDP shell hoists after resolve). */
 	ogType?: "website" | "product";
 	openGraph?: Record<string, string>;
-}): Metadata {
+}): Promise<Metadata> {
 	const url = buildStorefrontPath(options.locale, options.channel, options.pathSuffix);
+	// hreflang / og:locale:alternate advertise the market locale↔channel pairs managed in Saleor.
+	const channels = await getStorefrontChannels();
 	const languages = buildLocaleHreflangAlternates(
+		channels,
 		options.channel,
 		options.pathSuffixByLocale ?? options.pathSuffix,
 	);
 
 	const ogLocale = getLocaleDefinition(options.locale)?.ogLocale;
-	const ogAlternateLocale = getBrowseOgAlternateLocales(options.locale);
+	const ogAlternateLocale = getMarketOgAlternateLocales(channels, options.locale);
 
 	return buildPageMetadata({
 		title: options.title,
@@ -279,22 +282,4 @@ export function buildBrowsePageMetadata(options: {
 		ogType: options.ogType,
 		openGraph: options.openGraph,
 	});
-}
-
-/**
- * Locales advertised as `og:locale:alternate`.
- * When a locale×channel matrix is configured, only locales that appear in the matrix
- * (same set as hreflang) — never every `STOREFRONT_LOCALES` entry, which may include
- * languages with no valid browse URL.
- */
-function getBrowseOgAlternateLocales(currentLocale: string): string[] {
-	const pairs = getConfiguredLocaleChannelPairs();
-	const slugs: readonly LocaleSlug[] = pairs
-		? [...new Set(pairs.map((pair) => pair.locale))]
-		: getStorefrontLocaleSlugs();
-
-	return slugs
-		.filter((slug) => slug !== currentLocale)
-		.map((slug) => getLocaleDefinition(slug)?.ogLocale)
-		.filter((value): value is string => Boolean(value));
 }

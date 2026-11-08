@@ -23,9 +23,13 @@ COPY \
     ./tailwind.config.cjs \
     ./tsconfig.json \
     ./.graphqlrc.ts \
+    ./schema.graphql \
+    ./.env* \
     ./
 COPY ./messages ./messages/
 COPY ./public ./public/
+COPY ./eslint ./eslint/
+COPY ./scripts ./scripts/
 COPY ./src ./src/
 
 # Disable telemetry (build + runtime)
@@ -40,11 +44,11 @@ ENV NEXT_PUBLIC_STOREFRONT_URL=${NEXT_PUBLIC_STOREFRONT_URL}
 ARG NEXT_PUBLIC_CHECKOUT_URL
 ENV NEXT_PUBLIC_CHECKOUT_URL=${NEXT_PUBLIC_CHECKOUT_URL}
 
-ARG NEXT_PUBLIC_DEFAULT_CHANNEL
-ENV NEXT_PUBLIC_DEFAULT_CHANNEL=${NEXT_PUBLIC_DEFAULT_CHANNEL:-default-channel}
-
 ARG NEXT_PUBLIC_ENABLE_STRIPE_PAYMENTS
 ENV NEXT_PUBLIC_ENABLE_STRIPE_PAYMENTS=${NEXT_PUBLIC_ENABLE_STRIPE_PAYMENTS:-false}
+
+ARG GITHUB_ACTION
+ENV GITHUB_ACTION=${GITHUB_ACTION}
 
 # Build Next.js
 RUN NEXT_OUTPUT=standalone \

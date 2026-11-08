@@ -1,6 +1,6 @@
 # ADR 0001: Locale and channel URL routing
 
-**Status:** Accepted  
+**Status:** Accepted — amended by [ADR 0008](./0008-saleor-owned-channels-and-display-language.md) (channels and locale↔channel pairs owned by Saleor; URL locale = market locale, page text = display language; pages render per request)  
 **Date:** 2026-06-12  
 **Deciders:** Paper storefront team  
 **Implementation:** Shipped — `src/app/(storefront)/[locale]/[channel]/…`, middleware 308 from legacy `/{channel}/…`, GraphQL `languageCode` on catalog/menus/search/CMS.

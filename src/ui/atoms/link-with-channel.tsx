@@ -1,5 +1,5 @@
 "use client";
-import Link from "next/link";
+import Link from "@/ui/atoms/storefront-link";
 import { useParams } from "next/navigation";
 import { type ComponentProps } from "react";
 import { buildStorefrontPath } from "@/lib/storefront-path";

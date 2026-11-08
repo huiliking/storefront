@@ -5,7 +5,8 @@ import { getGalleryImages, resolveSelectedVariantId, type Product } from "./gall
 interface VariantGalleryDynamicProps {
 	product: Product;
 	channel: string;
-	localeSlug: string;
+	/** Display language — variant names / media alt text. */
+	displayLanguage: string;
 	searchParams: Promise<{ variant?: string; sku?: string }>;
 }
 
@@ -20,11 +21,11 @@ interface VariantGalleryDynamicProps {
 export async function VariantGalleryDynamic({
 	product,
 	channel,
-	localeSlug,
+	displayLanguage,
 	searchParams,
 }: VariantGalleryDynamicProps) {
 	const { variant: variantParam, sku: skuParam } = await searchParams;
-	const { variants, totalCount, overBudget } = await resolvePdpVariants(product, channel, localeSlug, {
+	const { variants, totalCount, overBudget } = await resolvePdpVariants(product, channel, displayLanguage, {
 		variantId: variantParam,
 		sku: skuParam,
 	});

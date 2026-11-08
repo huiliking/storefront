@@ -158,25 +158,20 @@ return buildBrowsePageMetadata({
 
 ### hreflang keys and `x-default`
 
-`buildLocaleHreflangAlternates()` (used by `buildBrowsePageMetadata`):
+`buildLocaleHreflangAlternates(channels, currentChannel, path)` (used by the async `buildBrowsePageMetadata`):
 
-| Config                                      | hreflang keys                                | URLs                                             |
-| ------------------------------------------- | -------------------------------------------- | ------------------------------------------------ |
-| No `NEXT_PUBLIC_STOREFRONT_LOCALE_CHANNELS` | Language-only (`ja`, `en`) from `htmlLang`   | Each locale keeps the **current** page’s channel |
-| Pairs set (`ja:japan,en:default,…`)         | Region-aware (`ja-JP`, `en-US`) from `bcp47` | Each locale uses its **paired** channel          |
-
-**`x-default`** points at `NEXT_PUBLIC_DEFAULT_LOCALE` + that locale’s paired/default channel — same knob as the root redirect and invalid-locale fallback. Paper intentionally does **not** add a separate `x-default` env; change the demo/default locale if the fallback URL is wrong.
+- **Alternates = the market locale↔channel pairs in Saleor** (`storefront.locales` channel metadata, ADR 0008),
+  one per locale. Keys are region-aware BCP 47 (`fr-CA`, `ja-JP`). When several channels list a locale, the
+  current channel wins, then the default channel.
+- **Display languages are not alternates** — `?lang=` changes page text on the same URL, so it is not a separate
+  indexable page.
+- **`x-default`** → the default channel (`storefront.default`) in its default locale.
+- `og:locale:alternate` lists the same market locales (minus the current one).
 
 ### Locale×channel pairs (SEO + navigation)
 
-Optional `NEXT_PUBLIC_STOREFRONT_LOCALE_CHANNELS=en:uk,pl:pl` (see `src/config/locale-channel.ts`):
-
-1. Invalid pairs → `notFound()`
-2. Language switch navigates to the paired channel (Japanese → `japan`, etc.)
-3. Region picker filters languages per market
-4. hreflang becomes region-aware (table above)
-
-When unset, any allowlisted locale × channel is valid and language switch **keeps** the current channel.
+Pairs live in Saleor (`src/lib/channels/storefront-channels.ts`): unpaired `/{locale}/{channel}` → `notFound()`;
+the market selector lists only paired locales; a language (display) switch never changes the channel.
 
 ## Known Next.js / audit findings
 

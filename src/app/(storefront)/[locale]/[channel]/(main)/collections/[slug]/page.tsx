@@ -14,6 +14,7 @@ import { templates } from "@/config/templates";
 import { CategoryHero, PlpListingClient } from "@/ui/components/plp";
 import { buildStorefrontPath } from "@/lib/storefront-path";
 import { pickTranslatedSlug } from "@/lib/saleor-translations";
+import { getDisplayLanguage } from "@/lib/display-language-server";
 
 // Prefetch: default (auto) under global `partialPrefetching` — App Shell only until a
 // caller opts in with `prefetch={true}` (no collection-destination links do today).
@@ -32,7 +33,12 @@ type PageProps = {
 
 export const generateMetadata = async (props: PageProps): Promise<Metadata> => {
 	const params = await props.params;
-	const collection = await getCollectionData(params.slug, params.channel, params.locale);
+	const collection = await getCollectionData(
+		params.slug,
+		params.channel,
+		params.locale,
+		await getDisplayLanguage(),
+	);
 	const plainDescription = parseEditorJSToText(collection?.description);
 
 	return buildBrowsePageMetadata({
@@ -56,9 +62,9 @@ export const generateMetadata = async (props: PageProps): Promise<Metadata> => {
 export default async function Page(props: PageProps) {
 	const params = await props.params;
 	const [collection, tListing, tNav] = await Promise.all([
-		getCollectionData(params.slug, params.channel, params.locale),
-		getTranslations({ locale: params.locale, namespace: "productsListing" }),
-		getTranslations({ locale: params.locale, namespace: "nav" }),
+		getCollectionData(params.slug, params.channel, params.locale, await getDisplayLanguage()),
+		getTranslations({ locale: await getDisplayLanguage(), namespace: "productsListing" }),
+		getTranslations({ locale: await getDisplayLanguage(), namespace: "nav" }),
 	]);
 
 	if (!collection) {
@@ -120,7 +126,12 @@ export default async function Page(props: PageProps) {
 
 async function CollectionProducts({ params: paramsPromise }: { params: PageProps["params"] }) {
 	const params = await paramsPromise;
-	const collection = await getCollectionData(params.slug, params.channel, params.locale);
+	const collection = await getCollectionData(
+		params.slug,
+		params.channel,
+		params.locale,
+		await getDisplayLanguage(),
+	);
 	if (!collection) {
 		notFound();
 	}
@@ -128,6 +139,7 @@ async function CollectionProducts({ params: paramsPromise }: { params: PageProps
 	const payload = await loadListingView({
 		surface: "collection",
 		locale: params.locale,
+		displayLanguage: await getDisplayLanguage(),
 		channel: params.channel,
 		slug: collection.slug,
 		view: {},

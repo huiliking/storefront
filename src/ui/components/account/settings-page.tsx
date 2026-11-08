@@ -1,7 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Mail, Calendar } from "lucide-react";
 import { resolveLocaleFromSlug } from "@/config/locale";
 import { EditNameForm } from "@/ui/components/account/edit-name-form";
@@ -12,9 +11,8 @@ import { useAccountUser } from "@/ui/components/account/account-context";
 export function AccountSettingsPage() {
 	const t = useTranslations("account.settings");
 	const tFields = useTranslations("account.fields");
-	const params = useParams<{ locale: string }>();
 	const user = useAccountUser();
-	const intlLocale = resolveLocaleFromSlug(params.locale).bcp47;
+	const intlLocale = resolveLocaleFromSlug(useLocale()).bcp47;
 
 	const memberSince = new Date(user.dateJoined).toLocaleDateString(intlLocale, {
 		month: "long",
@@ -57,7 +55,7 @@ export function AccountSettingsPage() {
 				</div>
 			</div>
 
-			<div className="border-destructive/20 rounded-lg border p-4 sm:p-6">
+			<div className="rounded-lg border border-destructive/20 p-4 sm:p-6">
 				<DeleteAccountSection />
 			</div>
 		</div>

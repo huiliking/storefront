@@ -30,6 +30,15 @@
 		"pagination": {
 			"previous": "Edellinen",
 			"next": "Seuraava"
+		},
+		"notFound": {
+			"title": "Sivua ei löytynyt",
+			"description": "Etsimääsi sivua ei ole olemassa tai se on siirretty.",
+			"goHome": "Etusivulle",
+			"browseProducts": "Selaa tuotteita",
+			"productTitle": "Tuotetta ei löytynyt",
+			"productDescription": "Tuote on ehkä poistettu, nimetty uudelleen tai se ei ole tilapäisesti saatavilla.",
+			"goBack": "Takaisin"
 		}
 	},
 	"pdp": {
@@ -150,7 +159,8 @@
 			"languageTitle": "Kieli",
 			"languageDescription": "Sisältö ja muotoilu",
 			"marketTitle": "Markkina",
-			"marketDescription": "Valuutta, verot ja toimitus"
+			"marketDescription": "Valuutta, verot ja toimitus",
+			"confirmMarketSwitch": "Ostoskorisi on sidottu tähän markkina-alueeseen. Markkina-alueen vaihtaminen aloittaa uuden ostoskorin. Jatketaanko?"
 		}
 	},
 	"account": {

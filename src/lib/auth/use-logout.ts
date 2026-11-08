@@ -3,9 +3,10 @@
 import { useCallback } from "react";
 
 import { logout } from "@/app/actions";
-import { resolveBrowseLocaleSlugWithFallback } from "@/lib/browse-locale";
 import { bumpChromeVersion } from "@/lib/chrome-sync";
 import { buildStorefrontPath } from "@/lib/storefront-path";
+import { withCurrentDisplayLanguage } from "@/lib/display-language-link";
+import { getDefaultLocaleSlug, isLocaleSlug } from "@/config/locale";
 
 export type LogoutOptions = {
 	locale?: string;
@@ -34,13 +35,13 @@ export function useLogout() {
 		}
 
 		if (options?.redirectTo) {
-			window.location.assign(options.redirectTo);
+			window.location.assign(withCurrentDisplayLanguage(options.redirectTo));
 			return;
 		}
 
 		if (options?.channel) {
-			const locale = resolveBrowseLocaleSlugWithFallback(options.locale);
-			window.location.assign(buildStorefrontPath(locale, options.channel));
+			const locale = options.locale && isLocaleSlug(options.locale) ? options.locale : getDefaultLocaleSlug();
+			window.location.assign(withCurrentDisplayLanguage(buildStorefrontPath(locale, options.channel)));
 			return;
 		}
 

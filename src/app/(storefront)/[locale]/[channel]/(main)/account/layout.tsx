@@ -7,6 +7,7 @@ import { AccountSkeleton } from "@/ui/components/account/account-skeleton";
 import { AccountProvider } from "@/ui/components/account/account-context";
 import { AccountUnavailable } from "@/ui/components/account/account-unavailable";
 import { getAccountAuthState } from "./get-current-user";
+import { getDisplayLanguage } from "@/lib/display-language-server";
 
 /** Auth-gated routes — prefetching is wasteful for rarely visited account pages. */
 export const prefetch = "force-disabled";
@@ -16,9 +17,8 @@ type LayoutProps = {
 	params: Promise<{ locale: string; channel: string }>;
 };
 
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
-	const { locale } = await params;
-	const t = await getTranslations({ locale, namespace: "account.metadata" });
+export async function generateMetadata() {
+	const t = await getTranslations({ locale: await getDisplayLanguage(), namespace: "account.metadata" });
 	return {
 		title: t("accountTitle"),
 	};
@@ -33,7 +33,8 @@ export default function AccountLayout({ children, params }: LayoutProps) {
 }
 
 async function AccountShell({ children, params }: LayoutProps) {
-	const { locale } = await params;
+	await params;
+	const displayLanguage = await getDisplayLanguage();
 	const auth = await getAccountAuthState();
 
 	if (auth.status === "guest") {
@@ -45,7 +46,7 @@ async function AccountShell({ children, params }: LayoutProps) {
 	}
 
 	if (auth.status === "unavailable") {
-		return <AccountUnavailable locale={locale} />;
+		return <AccountUnavailable locale={displayLanguage} />;
 	}
 
 	return (

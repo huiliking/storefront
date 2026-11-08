@@ -8,6 +8,7 @@ import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { Button } from "@/ui/components/ui/button";
 import { accountRoutes } from "@/ui/components/account/routes";
 import { AccountOrdersListSkeleton } from "@/ui/components/account/account-skeleton";
+import { getDisplayLanguage } from "@/lib/display-language-server";
 
 const ORDERS_PER_PAGE = 10;
 
@@ -25,17 +26,18 @@ export default function AccountOrdersPage({ params, searchParams }: Props) {
 }
 
 async function AccountOrdersContent({ params, searchParams }: Props) {
-	const [{ locale }, { after }] = await Promise.all([params, searchParams]);
-	const t = await getTranslations({ locale, namespace: "account.orders" });
-	const tErrors = await getTranslations({ locale, namespace: "account.errors" });
-	const tOrder = await getTranslations({ locale, namespace: "account" });
-	const tStatus = await getTranslations({ locale, namespace: "account.orderStatus" });
+	const [, { after }] = await Promise.all([params, searchParams]);
+	const displayLanguage = await getDisplayLanguage();
+	const t = await getTranslations({ locale: displayLanguage, namespace: "account.orders" });
+	const tErrors = await getTranslations({ locale: displayLanguage, namespace: "account.errors" });
+	const tOrder = await getTranslations({ locale: displayLanguage, namespace: "account" });
+	const tStatus = await getTranslations({ locale: displayLanguage, namespace: "account.orderStatus" });
 
 	if (!(await hasAuthSession())) {
 		return <AccountOrdersError title={t("title")} message={t("signInRequired")} />;
 	}
 
-	const result = await getCurrentUserOrders(locale, ORDERS_PER_PAGE, after);
+	const result = await getCurrentUserOrders(displayLanguage, ORDERS_PER_PAGE, after);
 
 	if (!result.ok) {
 		return <AccountOrdersError title={t("title")} message={tErrors("loadOrdersFailed")} />;
@@ -68,7 +70,7 @@ async function AccountOrdersContent({ params, searchParams }: Props) {
 							<OrderRow
 								key={order.id}
 								order={order}
-								localeSlug={locale}
+								localeSlug={displayLanguage}
 								labels={buildOrderRowLabels(tOrder, tStatus, order)}
 							/>
 						))}

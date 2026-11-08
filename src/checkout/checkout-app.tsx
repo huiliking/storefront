@@ -17,7 +17,6 @@ import { CheckoutUserProvider } from "@/checkout/providers/checkout-user";
 import { CheckoutBrowseProvider } from "@/checkout/providers/checkout-browse";
 import { CheckoutSessionProvider } from "@/checkout/providers/checkout-session";
 import { CheckoutPaymentReturnErrorProvider } from "@/checkout/providers/checkout-payment-return-error";
-import type { LocaleSlug } from "@/config/locale";
 import type { CheckoutMessages } from "@/i18n/load-messages";
 import { CheckoutIntlProvider } from "@/checkout/providers/checkout-intl";
 import { RootViews } from "./views/root-views";
@@ -29,6 +28,7 @@ import { StripeCheckoutCompletionHost } from "@/checkout/components/payment/stri
 import { CheckoutLoadingFallback } from "@/checkout/views/saleor-checkout";
 import { CheckoutCrashFallback } from "@/checkout/views/page-not-found";
 import "./index.css";
+import type { CheckoutLanguages } from "@/lib/checkout-languages";
 
 // Composition root: payment modules and CheckoutDataProvider reach Saleor only
 // through the CheckoutTransport seam; the checkout shell wires in the Next.js
@@ -43,7 +43,8 @@ type CheckoutAppProps = {
 	shippingCountries: ShippingCountries;
 	channelDefaultCountryCode: ChannelDefaultCountryCode;
 	checkoutContent: CheckoutContent;
-	storefrontLocale: LocaleSlug;
+	/** Display language, market locale, explicit `?lang=` (ADR 0008). */
+	languages: CheckoutLanguages;
 	messages: CheckoutMessages;
 };
 
@@ -59,12 +60,12 @@ export function CheckoutApp({
 	shippingCountries,
 	channelDefaultCountryCode,
 	checkoutContent,
-	storefrontLocale,
+	languages,
 	messages,
 }: CheckoutAppProps) {
 	return (
-		<CheckoutIntlProvider locale={storefrontLocale} messages={messages}>
-			<CheckoutBrowseProvider locale={storefrontLocale}>
+		<CheckoutIntlProvider locale={languages.displayLanguage} messages={messages}>
+			<CheckoutBrowseProvider languages={languages}>
 				<CheckoutSessionProvider checkoutId={checkoutId} orderId={null}>
 					<CheckoutSessionCleanup />
 					<CheckoutStepUrlGuard />

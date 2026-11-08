@@ -9,6 +9,7 @@ import { getPageData } from "@/lib/catalog/get-page-data";
 import { buildCatalogPathSuffixByLocale, buildLocaleSlugMap } from "@/lib/catalog/locale-slugs";
 import { buildBrowsePageMetadata, resolveSeoDescription } from "@/lib/seo";
 import { PageContentSkeleton } from "@/ui/components/page-content-skeleton";
+import { getDisplayLanguage } from "@/lib/display-language-server";
 
 const parser = edjsHTML();
 
@@ -16,7 +17,7 @@ export const generateMetadata = async (props: {
 	params: Promise<{ slug: string; locale: string; channel: string }>;
 }): Promise<Metadata> => {
 	const params = await props.params;
-	const page = await getPageData(params.slug, params.locale);
+	const page = await getPageData(params.slug, params.locale, await getDisplayLanguage());
 
 	return buildBrowsePageMetadata({
 		title: page?.seoTitle || page?.title || "Page",
@@ -51,7 +52,7 @@ async function PageContent({
 	params: Promise<{ slug: string; locale: string; channel: string }>;
 }) {
 	const params = await paramsPromise;
-	const page = await getPageData(params.slug, params.locale);
+	const page = await getPageData(params.slug, params.locale, await getDisplayLanguage());
 
 	if (!page) {
 		notFound();

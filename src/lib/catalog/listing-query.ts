@@ -113,6 +113,8 @@ export function applyListingSearchParams(
 	input: {
 		surface: ListingSurface;
 		locale: string;
+		/** Display language, sent as `lang` (the middleware does not run on `/api`). */
+		displayLanguage?: string;
 		channel: string;
 		slug?: string;
 		view: ListingViewParams;
@@ -120,6 +122,7 @@ export function applyListingSearchParams(
 ): void {
 	target.set("surface", input.surface);
 	target.set("locale", input.locale);
+	if (input.displayLanguage) target.set("lang", input.displayLanguage);
 	target.set("channel", input.channel);
 	if (input.slug) target.set("slug", input.slug);
 	for (const key of LISTING_QUERY_KEYS) {

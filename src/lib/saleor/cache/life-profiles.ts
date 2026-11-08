@@ -97,9 +97,9 @@ export const paperCacheLifeProfileDocs: Record<
 	},
 	channels: {
 		label: "Channels",
-		usedFor: "Footer channel selector metadata",
+		usedFor: "Storefront channels + market locales (routing, selectors) from Saleor channel metadata",
 		stale: "5 min",
-		revalidate: "1 day",
+		revalidate: "15 min",
 		expire: "1 week",
 	},
 	listingTtl: {

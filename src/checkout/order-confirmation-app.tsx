@@ -12,16 +12,17 @@ import { OrderConfirmation, OrderConfirmationSkeleton } from "@/checkout/views/o
 import { CheckoutCrashFallback } from "@/checkout/views/page-not-found";
 import "./index.css";
 
-import type { LocaleSlug } from "@/config/locale";
 import type { CheckoutMessages } from "@/i18n/load-messages";
 import { CheckoutIntlProvider } from "@/checkout/providers/checkout-intl";
+import type { CheckoutLanguages } from "@/lib/checkout-languages";
 
 type OrderConfirmationAppProps = {
 	orderId: string | null;
 	initialOrder: ServerOrder | null;
 	access: OrderViewAccess;
 	initialUser: CheckoutUser | null;
-	storefrontLocale: LocaleSlug;
+	/** Display language, market locale, explicit `?lang=` (ADR 0008). */
+	languages: CheckoutLanguages;
 	messages: CheckoutMessages;
 };
 
@@ -33,12 +34,12 @@ export function OrderConfirmationApp({
 	initialOrder,
 	access,
 	initialUser,
-	storefrontLocale,
+	languages,
 	messages,
 }: OrderConfirmationAppProps) {
 	return (
-		<CheckoutIntlProvider locale={storefrontLocale} messages={messages}>
-			<CheckoutBrowseProvider locale={storefrontLocale}>
+		<CheckoutIntlProvider locale={languages.displayLanguage} messages={messages}>
+			<CheckoutBrowseProvider languages={languages}>
 				<CheckoutUserProvider initialUser={initialUser}>
 					<OrderDataProvider orderId={orderId} initialOrder={initialOrder} access={access}>
 						<ErrorBoundary FallbackComponent={CheckoutCrashFallback}>

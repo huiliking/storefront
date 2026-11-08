@@ -9,8 +9,7 @@ import { cn } from "@/lib/utils";
 import { applyCheckoutPromoCode, removeCheckoutPromoCode } from "@/app/(checkout)/actions";
 import { type CheckoutErrorFragment, type CheckoutFragment, type OrderFragment } from "@/checkout/graphql";
 import { useCheckoutData } from "@/checkout/providers/checkout-data";
-import { useTranslations } from "next-intl";
-import { useCheckoutBrowseLocale } from "@/checkout/providers/checkout-browse";
+import { useTranslations, useLocale } from "next-intl";
 import { getLocaleDefinition } from "@/config/locale";
 import { localeConfig } from "@/config/locale";
 import { contactFieldAttributes } from "@/checkout/lib/consts/input-attributes";
@@ -183,8 +182,8 @@ export const OrderSummary: FC<OrderSummaryProps> = ({
 }) => {
 	const t = useTranslations("checkout.summary");
 	const tCommon = useTranslations("account.common");
-	const localeSlug = useCheckoutBrowseLocale();
-	const localeBcp47 = getLocaleDefinition(localeSlug)?.bcp47 ?? localeConfig.default;
+	// Formatting follows the display language (next-intl locale), not the market locale (ADR 0008).
+	const localeBcp47 = getLocaleDefinition(useLocale())?.bcp47 ?? localeConfig.default;
 	// Collapsed by default on mobile
 	const [isExpanded, setIsExpanded] = useState(false);
 	const unavailableIds = new Set(unavailableLineIds);

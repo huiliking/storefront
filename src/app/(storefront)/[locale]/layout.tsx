@@ -5,15 +5,14 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { rootMetadata } from "@/lib/seo";
-import { getConfiguredLocaleChannelPairs } from "@/config/locale-channel";
+import { getDisplayLanguage, getExplicitDisplayLanguage } from "@/lib/display-language-server";
+import { ExplicitDisplayLanguageProvider } from "@/ui/atoms/display-language-context";
 import {
 	getDefaultLocaleSlug,
 	getDefaultTimeZone,
-	getStorefrontLocaleSlugs,
 	isStorefrontLocaleSlug,
 	resolveLocaleFromSlug,
 } from "@/config/locale";
-import { PersistBrowseLocaleCookie } from "@/ui/components/persist-browse-locale-cookie";
 import { getRootHtmlFontProps } from "@/lib/fonts";
 import { saleorMediaPreconnectOrigin } from "@/lib/images";
 import { speedInsightsSampleRate } from "@/lib/speed-insights";
@@ -42,21 +41,30 @@ export async function generateMetadata({
 	};
 }
 
-export function generateStaticParams() {
-	const pairs = getConfiguredLocaleChannelPairs();
-	if (pairs) {
-		const locales = [...new Set(pairs.map((pair) => pair.locale))];
-		return locales.map((locale) => ({ locale }));
-	}
+/**
+ * Storefront pages render per request — no build-time prerendering. Almost every page depends on
+ * the display language (`?lang=` / browser), and channels live in Saleor, so a build-time page set
+ * would be both incomplete and stale. Saleor data stays in the tagged data cache (`"use cache"`),
+ * cleared by webhooks, so per-request rendering does not mean per-request Saleor calls.
+ * No `generateStaticParams` in `[channel]`, and no Saleor read at build time.
+ */
+export const instant = false;
 
-	return getStorefrontLocaleSlugs().map((locale) => ({ locale }));
+/**
+ * Framework requirement only: with Cache Components, every root param (`locale` — this is the
+ * root layout) needs at least one build-time value or the build fails. One code-defined seed,
+ * not a list of markets; all other locale/channel pairs come from Saleor at request time.
+ */
+export function generateStaticParams() {
+	return [{ locale: getDefaultLocaleSlug() }];
 }
 
 /**
- * Storefront root layout — renders `<html lang>` server-side from the URL locale segment.
+ * Storefront root layout — `<html lang>` and code-owned UI strings follow the **display language**
+ * (`?lang=` → browser → market locale, resolved by the middleware), not the URL market locale.
  *
- * Invalid locale slugs fall back to the default `htmlLang` here so the not-found boundary
- * still has an HTML shell; the actual `notFound()` for invalid pairs lives in `[channel]/layout`.
+ * The URL `[locale]` stays the market locale (links, slugs, hreflang); the actual `notFound()` for
+ * invalid pairs lives in `[channel]/layout`.
  */
 export default async function LocaleRootLayout({
 	children,
@@ -65,14 +73,14 @@ export default async function LocaleRootLayout({
 	children: ReactNode;
 	params: Promise<{ locale: string }>;
 }) {
-	const { locale } = await params;
-	const localeSlug = isStorefrontLocaleSlug(locale) ? locale : getDefaultLocaleSlug();
-	const htmlLang = resolveLocaleFromSlug(localeSlug).htmlLang;
+	// URL locale = market locale (validated in `[channel]/layout`); text follows the display language.
+	await params;
+	const displayLanguage = await getDisplayLanguage();
+	const explicitDisplayLanguage = await getExplicitDisplayLanguage();
+	const htmlLang = resolveLocaleFromSlug(displayLanguage).htmlLang;
 
-	// Code-owned UI strings (next-intl). Locale comes from the URL segment (ADR 0001/0002),
-	// not next-intl routing. `setRequestLocale` seeds the request config from our param so
-	// message resolution stays static (no `headers()`) — preserves PPR / Cache Components.
-	setRequestLocale(localeSlug);
+	// next-intl gets the display language; every client `useTranslations` / `useLocale` follows it.
+	setRequestLocale(displayLanguage);
 	const messages = await getMessages();
 	const htmlProps = getRootHtmlFontProps(htmlLang);
 	const mediaOrigin = saleorMediaPreconnectOrigin();
@@ -83,9 +91,10 @@ export default async function LocaleRootLayout({
 			    preconnect would warm a connection the image load cannot reuse. */}
 			{mediaOrigin && <link rel="preconnect" href={mediaOrigin} />}
 			<body className="min-h-dvh font-sans">
-				<NextIntlClientProvider locale={localeSlug} messages={messages} timeZone={getDefaultTimeZone()}>
-					<PersistBrowseLocaleCookie locale={localeSlug} />
-					{children}
+				<NextIntlClientProvider locale={displayLanguage} messages={messages} timeZone={getDefaultTimeZone()}>
+					<ExplicitDisplayLanguageProvider value={explicitDisplayLanguage}>
+						{children}
+					</ExplicitDisplayLanguageProvider>
 					{/* Sampled — unsampled Speed Insights dominates the Vercel bill at scale. */}
 					<SpeedInsights sampleRate={speedInsightsSampleRate()} />
 					{/* Unsampled page views — the denominator; URLs are redacted in beforeSend. */}

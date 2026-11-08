@@ -5,7 +5,7 @@ The Dashboard **Store Readiness** guide links here for the storefront track.
 
 ## 1. Deploy Paper
 
-1. One-click: [Deploy on Vercel](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fsaleor%2Fstorefront&env=NEXT_PUBLIC_SALEOR_API_URL%2CNEXT_PUBLIC_DEFAULT_CHANNEL%2CNEXT_PUBLIC_DEFAULT_LOCALE%2CNEXT_PUBLIC_STOREFRONT_LOCALES&project-name=my-saleor-storefront&repository-name=my-saleor-storefront)
+1. One-click: [Deploy on Vercel](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fsaleor%2Fstorefront&env=NEXT_PUBLIC_SALEOR_API_URL%2CSALEOR_APP_TOKEN%2CNEXT_PUBLIC_DEFAULT_LOCALE%2CNEXT_PUBLIC_STOREFRONT_DISPLAY_LANGUAGES&project-name=my-saleor-storefront&repository-name=my-saleor-storefront)
 2. Or clone: `git clone https://github.com/saleor/storefront.git`
 3. Optional local: `pnpm install` → copy `.env.example` → `pnpm dev`
 
@@ -15,14 +15,16 @@ Paper uses Saleor Models for marketing copy by default (`CONTENT_PROVIDER` defau
 
 Set at least:
 
-| Variable                         | Example                                       | Notes                                        |
-| -------------------------------- | --------------------------------------------- | -------------------------------------------- |
-| `NEXT_PUBLIC_SALEOR_API_URL`     | `https://your-instance.saleor.cloud/graphql/` | Must end with `/graphql/`                    |
-| `NEXT_PUBLIC_DEFAULT_CHANNEL`    | `default-channel`                             | Same channel you finished in Store Readiness |
-| `NEXT_PUBLIC_DEFAULT_LOCALE`     | `en`                                          |                                              |
-| `NEXT_PUBLIC_STOREFRONT_LOCALES` | `en` or `en,pl,de`                            |                                              |
+| Variable                                   | Example                                       | Notes                                              |
+| ------------------------------------------ | --------------------------------------------- | -------------------------------------------------- |
+| `NEXT_PUBLIC_SALEOR_API_URL`               | `https://your-instance.saleor.cloud/graphql/` | Must end with `/graphql/`                          |
+| `SALEOR_APP_TOKEN`                         | (secret)                                      | Zero-permission app token — reads the channel list |
+| `NEXT_PUBLIC_DEFAULT_LOCALE`               | `en`                                          | Last-resort display language                       |
+| `NEXT_PUBLIC_STOREFRONT_DISPLAY_LANGUAGES` | `en` or `en,pl,de`                            | Display languages (translation only)               |
 
-Multi-channel storefronts: also set `STOREFRONT_CHANNELS` (see README).
+Channels are configured in Saleor, not here: on each storefront channel set public metadata
+`storefront.locales` (and `storefront.default = true` on the channel `/` opens), plus a `CHANNEL_*`
+webhook to `/api/revalidate` — see `skills/saleor-paper-storefront/rules/ui-channels.md` and ADR 0008.
 
 ## 3. Payments
 

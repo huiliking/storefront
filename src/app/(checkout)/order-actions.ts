@@ -7,8 +7,7 @@ import { fetchOrderByNumberOnServer } from "@/checkout/lib/server/fetch-order-by
 import { fetchOrderOnServer } from "@/checkout/lib/server/fetch-order";
 import { buildOrderStatusPath } from "@paper/session-bridge";
 import { checkRateLimit } from "@/lib/auth/auth-rate-limit";
-import { getCheckoutLocaleSlug } from "@/lib/browse-locale-server";
-import { isStorefrontLocaleSlug } from "@/config/locale";
+import { isLocaleSlug } from "@/config/locale";
 import {
 	ORDER_VIEW_FIND_RATE_LIMIT,
 	emailsMatch,
@@ -16,6 +15,7 @@ import {
 	setOrderViewCookie,
 	signOrderViewToken,
 } from "@/lib/order-view";
+import { storefrontHrefWithLanguage } from "@/lib/display-language-server";
 
 export type OrderLookupActionResult = {
 	ok: false;
@@ -35,16 +35,16 @@ async function clientIp(): Promise<string> {
 	return headerList.get("x-real-ip") ?? "unknown";
 }
 
+/** Market locale for links back to the storefront, passed through the form (`?locale=`). */
 function browseLocaleFromForm(formData: FormData): string | null {
 	const raw = String(formData.get("locale") ?? "");
-	return isStorefrontLocaleSlug(raw) ? raw : null;
+	return isLocaleSlug(raw) ? raw : null;
 }
 
 async function grantOrderView(orderId: string, formData: FormData): Promise<never> {
 	const token = signOrderViewToken(orderId);
 	await setOrderViewCookie(token);
-	const locale = browseLocaleFromForm(formData) ?? (await getCheckoutLocaleSlug());
-	redirect(buildOrderStatusPath(token, locale));
+	redirect(await storefrontHrefWithLanguage(buildOrderStatusPath(token, browseLocaleFromForm(formData))));
 }
 
 async function rateLimitOrNull(action: string): Promise<OrderLookupActionResult | null> {

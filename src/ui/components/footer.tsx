@@ -1,17 +1,7 @@
 import { Suspense } from "react";
-import Link from "next/link";
-import { StorefrontRegionPicker } from "./storefront-region-picker";
-import {
-	getStaticStorefrontChannelSlugs,
-	needsAsyncChannelDiscovery,
-	shouldFetchChannelMetadata,
-	toChannelSelectOptions,
-} from "@/config/channels";
-import { getCachedChannelsList } from "@/lib/channels/get-channels-data";
-import { getStorefrontChannelSlugs } from "@/lib/channel-slugs";
+import Link from "@/ui/atoms/storefront-link";
 import { getFooterMenuItems } from "@/lib/menus/get-menu-data";
 import { getStorefrontContent } from "@/lib/content/server";
-import { getStorefrontLocaleOptions } from "@/lib/locale-display";
 import { FooterMenuColumns } from "./footer-menu-columns";
 import { CopyrightText } from "./copyright-text";
 import { FooterAttribution } from "./footer-attribution";
@@ -20,24 +10,16 @@ import { brandConfig } from "@/config/brand";
 import { Logo } from "./shared/logo";
 
 import { buildStorefrontPath } from "@/lib/storefront-path";
+import { getDisplayLanguage } from "@/lib/display-language-server";
 
 export async function Footer({ locale, channel }: { locale: string; channel: string }) {
-	const resolvedSlugs = needsAsyncChannelDiscovery()
-		? await getStorefrontChannelSlugs()
-		: getStaticStorefrontChannelSlugs();
-
-	const [menuItems, channels, content] = await Promise.all([
-		getFooterMenuItems(channel, locale),
-		shouldFetchChannelMetadata(resolvedSlugs) ? getCachedChannelsList() : Promise.resolve(null),
-		getStorefrontContent(channel, locale),
+	const displayLanguage = await getDisplayLanguage();
+	const [menuItems, content] = await Promise.all([
+		getFooterMenuItems(channel, locale, displayLanguage),
+		getStorefrontContent(channel, displayLanguage),
 	]);
 
 	const footerMenuItems = menuItems ?? [];
-	const localeOptions = getStorefrontLocaleOptions();
-	const selectorChannels =
-		channels?.channels && resolvedSlugs.length > 0
-			? toChannelSelectOptions(channels.channels, resolvedSlugs)
-			: [];
 
 	return (
 		<footer className="bg-foreground text-background">
@@ -55,12 +37,7 @@ export async function Footer({ locale, channel }: { locale: string; channel: str
 					<FooterMenuColumns items={footerMenuItems} />
 				</div>
 
-				{/* Language + market — hidden when only one option on each axis */}
-				{(localeOptions.length > 1 || selectorChannels.length > 1) && (
-					<div className="mt-10">
-						<StorefrontRegionPicker locales={localeOptions} channels={selectorChannels} variant="inverted" />
-					</div>
-				)}
+				{/* Market selector (left) and language picker (right) live in the header — ADR 0008. */}
 
 				{/* Bottom bar */}
 				<div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-inverse pt-8 sm:flex-row">

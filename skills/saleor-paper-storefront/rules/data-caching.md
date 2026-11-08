@@ -257,6 +257,6 @@ Rules of thumb:
 | `src/app/api/cache-info/route.ts`                                                                 | Manifest introspection for the Dashboard app            |
 | `src/lib/catalog/*.ts`, `src/lib/menus/get-menu-data.ts`, `src/lib/channels/get-channels-data.ts` | `"use cache"` data boundaries                           |
 | `src/lib/graphql-locale.ts`, `src/lib/saleor-translations.ts`, `src/config/locale.ts`             | Locale → GraphQL `languageCode` + translation merge     |
-| `src/lib/channel-slugs.ts`                                                                        | Storefront channel allowlist for invalidation fan-out   |
+| `src/lib/channels/get-storefront-channels.ts`                                                     | Saleor channel list (metadata) for invalidation fan-out |
 
 **Rolling back to plain ISR** (rarely needed): set `cacheComponents: false`, remove `"use cache"` from the data modules above, stop `cachedQuery` from applying the profile (a kernel edit, declared in `paper-version.json` `coreOverrides`), and drop the profile argument from `revalidateTag` calls. Suspense boundaries, CSS-order layout, and the access-mode split stay useful regardless.

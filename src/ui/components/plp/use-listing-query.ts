@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useLocale } from "next-intl";
 import {
 	applyListingSearchParams,
 	listingViewFromSearchParams,
@@ -65,6 +66,8 @@ export function useListingQuery({
 	providerId = "saleor",
 }: UseListingQueryArgs): UseListingQueryResult {
 	const searchParams = useSearchParams();
+	// next-intl's locale is the display language (set by the root layout).
+	const displayLanguage = useLocale();
 	const view = useMemo(() => listingViewFromSearchParams(searchParams), [searchParams]);
 	const viewKey = listingViewKey(view);
 	const matchesServer = viewKey === initialViewKey;
@@ -79,6 +82,7 @@ export function useListingQuery({
 		applyListingSearchParams(params, {
 			surface,
 			locale,
+			displayLanguage,
 			channel,
 			slug,
 			view,
@@ -108,7 +112,7 @@ export function useListingQuery({
 			});
 
 		return () => ac.abort();
-	}, [matchesServer, viewKey, surface, locale, channel, slug, view, providerId]);
+	}, [matchesServer, viewKey, surface, locale, displayLanguage, channel, slug, view, providerId]);
 
 	if (matchesServer) {
 		return {

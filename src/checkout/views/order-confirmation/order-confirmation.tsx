@@ -18,6 +18,7 @@ import { getCustomerOrderStatusLabel } from "@/lib/order-status";
 import { billingCityCountry } from "@/lib/order-view/sanitize";
 import { buildStorefrontPath } from "@/lib/storefront-path";
 import { OrderEmailGate } from "./order-email-gate";
+import { useWithDisplayLanguage } from "@/ui/atoms/display-language-context";
 
 function formatAddress(address: {
 	firstName?: string | null;
@@ -67,6 +68,7 @@ export const OrderConfirmation = () => {
 	const { order, access } = useOrder();
 	const { authenticated } = useCheckoutUser();
 	const storefrontLocale = useCheckoutBrowseLocale();
+	const withLang = useWithDisplayLanguage();
 	const t = useTranslations("checkout.confirmation");
 	const tStatus = useTranslations("account.orderStatus");
 	const tFind = useTranslations("checkout.orderFind");
@@ -207,14 +209,14 @@ export const OrderConfirmation = () => {
 									</Button>
 									{verified && channel && !authenticated ? (
 										<a
-											href={buildStorefrontPath(storefrontLocale, channel, "/signup")}
+											href={withLang(buildStorefrontPath(storefrontLocale, channel, "/signup"))}
 											className="text-sm text-muted-foreground underline underline-offset-2"
 										>
 											{t("createAccount")}
 										</a>
 									) : null}
 									<Link
-										href={`/order/find?locale=${encodeURIComponent(storefrontLocale)}`}
+										href={withLang(`/order/find?locale=${encodeURIComponent(storefrontLocale)}`)}
 										className="text-sm text-muted-foreground underline underline-offset-2"
 									>
 										{tFind("findAnother")}

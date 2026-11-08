@@ -6,7 +6,9 @@ import { type CartCheckout, withTranslatedCartCheckout } from "@/lib/cart-checko
 import { checkoutGraphqlLocaleVariables, resolveCheckoutLocaleSlug } from "@/lib/checkout-locale";
 import { checkoutCreateContextMetadata } from "@/lib/commerce-context/checkout-create-context";
 import { liveQuery, mutate } from "@/lib/saleor";
-import { graphqlLanguageCodeVariables } from "@/lib/graphql-locale";
+import { getDocumentLanguageCode } from "@/lib/channels/document-language";
+import { getStorefrontChannels } from "@/lib/channels/get-storefront-channels";
+import { getDefaultStorefrontChannel } from "@/lib/channels/storefront-channels";
 
 /** Checkout id from this channel's cart cookie (`checkoutId-{channel}`). */
 export async function getIdFromCookies(channel: string) {
@@ -27,6 +29,15 @@ export async function getIdFromCookies(channel: string) {
  * per channel. With carts in multiple channels the default channel wins;
  * otherwise channels are compared alphabetically so the pick is deterministic.
  */
+/** Saleor's default storefront channel (`storefront.default`), or null when the list is unavailable. */
+async function getSaleorDefaultChannelSlug(): Promise<string | null> {
+	try {
+		return getDefaultStorefrontChannel(await getStorefrontChannels())?.slug ?? null;
+	} catch {
+		return null;
+	}
+}
+
 /** Channel slug from cart cookies when checkout channel is not yet known (e.g. empty checkout). */
 export async function getChannelSlugFromCartCookies(): Promise<string | null> {
 	try {
@@ -40,7 +51,7 @@ export async function getChannelSlugFromCartCookies(): Promise<string | null> {
 
 		const channelFromCookie = (name: string) => name.slice(checkoutIdCookieName("").length);
 
-		const defaultChannel = process.env.NEXT_PUBLIC_DEFAULT_CHANNEL;
+		const defaultChannel = await getSaleorDefaultChannelSlug();
 		if (defaultChannel) {
 			const preferred = cartCookies.find((cookie) => cookie.name === checkoutIdCookieName(defaultChannel));
 			if (preferred) {
@@ -64,7 +75,7 @@ export async function getFirstCheckoutIdFromCartCookies(): Promise<string | null
 			return null;
 		}
 
-		const defaultChannel = process.env.NEXT_PUBLIC_DEFAULT_CHANNEL;
+		const defaultChannel = await getSaleorDefaultChannelSlug();
 		if (defaultChannel) {
 			const preferred = cartCookies.find((cookie) => cookie.name === checkoutIdCookieName(defaultChannel));
 			if (preferred) {
@@ -161,7 +172,9 @@ export async function create({ channel, localeSlug }: { channel: string; localeS
 	return mutate(CheckoutCreateDocument, {
 		variables: {
 			channel,
-			...graphqlLanguageCodeVariables(locale),
+			// Stored on the checkout → order: drives order emails/invoices. Channel's default locale,
+			// not the display language (ADR 0008).
+			languageCode: await getDocumentLanguageCode(channel),
 			metadata: await checkoutCreateContextMetadata(locale),
 		},
 	});

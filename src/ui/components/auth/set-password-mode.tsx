@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import Link from "@/ui/atoms/storefront-link";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Lock, Eye, EyeOff, CheckCircle } from "lucide-react";
@@ -10,6 +10,7 @@ import { buildStorefrontPath } from "@/lib/storefront-path";
 import { Button } from "@/ui/components/ui/button";
 import { Input } from "@/ui/components/ui/input";
 import { Label } from "@/ui/components/ui/label";
+import { withCurrentDisplayLanguage } from "@/lib/display-language-link";
 
 type Props = {
 	email: string;
@@ -67,7 +68,9 @@ export function SetPasswordMode({ email, token }: Props) {
 				setSuccess(true);
 				await syncAuthSurfacesAfterSignIn(params.channel, router, { skipRefresh: true });
 				setTimeout(() => {
-					window.location.assign(buildStorefrontPath(params.locale, params.channel));
+					window.location.assign(
+						withCurrentDisplayLanguage(buildStorefrontPath(params.locale, params.channel)),
+					);
 				}, 2000);
 			}
 		} catch {
@@ -104,7 +107,7 @@ export function SetPasswordMode({ email, token }: Props) {
 
 				<form onSubmit={handleSubmit} className="space-y-4">
 					{error && (
-						<div role="alert" className="bg-destructive/10 rounded-md p-3 text-sm text-destructive">
+						<div role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
 							{error}
 						</div>
 					)}

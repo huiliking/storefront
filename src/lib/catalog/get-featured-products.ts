@@ -1,7 +1,7 @@
 import "server-only";
 
 import { ProductListByCollectionDocument, ProductOrderField, OrderDirection } from "@/gql/graphql";
-import { graphqlLanguageCodeVariables } from "@/lib/graphql-locale";
+import { graphqlContentAndSlugVariables } from "@/lib/graphql-locale";
 import { CACHE_PROFILES, cachedQuery } from "@/lib/saleor";
 
 /**
@@ -13,6 +13,8 @@ export async function getFeaturedProducts(
 	localeSlug: string,
 	limit = 12,
 	collectionSlug = "featured-products",
+	/** Product names/labels; `localeSlug` (market) drives link slugs. */
+	displayLanguage: string = localeSlug,
 ) {
 	"use cache";
 
@@ -24,7 +26,7 @@ export async function getFeaturedProducts(
 			channel,
 			first: limit,
 			sortBy: { field: ProductOrderField.Collection, direction: OrderDirection.Asc },
-			...graphqlLanguageCodeVariables(localeSlug),
+			...graphqlContentAndSlugVariables(localeSlug, displayLanguage),
 		},
 	});
 

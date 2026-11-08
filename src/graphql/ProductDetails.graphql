@@ -2,6 +2,7 @@ query ProductDetails(
 	$slug: String!
 	$channel: String!
 	$languageCode: LanguageCodeEnum!
+	$marketLanguageCode: LanguageCodeEnum!
 	$slugLanguageCode: LanguageCodeEnum
 ) {
 	product(slug: $slug, channel: $channel, slugLanguageCode: $slugLanguageCode) {
@@ -17,6 +18,9 @@ query ProductDetails(
 			description
 			seoTitle
 			seoDescription
+		}
+		# URL slug follows the market locale (URL), not the display language.
+		marketTranslation: translation(languageCode: $marketLanguageCode) {
 			slug
 		}
 		...ProductLocaleSlugTranslations
@@ -40,6 +44,9 @@ query ProductDetails(
 			slug
 			translation(languageCode: $languageCode) {
 				name
+			}
+			# URL slug follows the market locale (URL), not the display language.
+			marketTranslation: translation(languageCode: $marketLanguageCode) {
 				slug
 			}
 		}

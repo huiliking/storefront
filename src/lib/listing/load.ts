@@ -9,6 +9,7 @@ import { listingQueryFromInput } from "@/lib/listing/query";
 export async function loadListingView(input: {
 	surface: ListingSurface;
 	locale: string;
+	displayLanguage?: string;
 	channel: string;
 	slug?: string;
 	view: ListingViewParams;

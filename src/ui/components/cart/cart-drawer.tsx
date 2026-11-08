@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/ui/atoms/storefront-link";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, Truck, RotateCcw } from "lucide-react";
 import { Button, buttonClassName } from "@/ui/components/ui/button";
@@ -69,6 +69,7 @@ interface CartLine {
 }
 
 import { getColorHex, isColorAttribute } from "@/lib/colors";
+import { useWithDisplayLanguage } from "@/ui/atoms/display-language-context";
 
 interface VariantAttribute {
 	name: string;
@@ -136,11 +137,13 @@ export function CartDrawer({
 	const [isCartBusy, setIsCartBusy] = useState(false);
 	// Functional drawer chrome (totals, buttons, a11y labels) — code-owned i18n (ADR 0002).
 	const t = useTranslations("cart.drawer");
+	const withLang = useWithDisplayLanguage();
 
 	const itemCount = lines.reduce((sum, line) => sum + line.quantity, 0);
 	const subtotal = totalPrice?.gross.amount ?? 0;
 	const currency = totalPrice?.gross.currency ?? localeConfig.fallbackCurrency;
-	const intlLocale = resolveLocaleFromSlug(localeSlug).bcp47;
+	// Display language for formatting; `localeSlug` (market) stays for links.
+	const intlLocale = resolveLocaleFromSlug(useLocale()).bcp47;
 
 	const runCartMutation = (mutation: () => Promise<void>) => {
 		setIsCartBusy(true);
@@ -162,9 +165,10 @@ export function CartDrawer({
 		runCartMutation(() => updateCartLineQuantity(checkoutId, lineId, newQuantity));
 	};
 
-	const checkoutHref = checkoutId
-		? buildCheckoutPath({ checkoutId, step: "contact", browseLocale: localeSlug })
-		: "/checkout";
+	// Market (`?locale=`) + explicit display language (`?lang=`) travel into checkout via the URL.
+	const checkoutHref = withLang(
+		checkoutId ? buildCheckoutPath({ checkoutId, step: "contact", browseLocale: localeSlug }) : "/checkout",
+	);
 	const { drawer } = cart;
 
 	// Single source of truth: the same threshold drives the progress bar, the summary

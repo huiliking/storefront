@@ -4,11 +4,11 @@ import { getTranslations } from "next-intl/server";
 import { cache } from "react";
 
 import { buildCheckoutGatewayMessages } from "@/checkout/lib/payment/gateway-messages";
-import { getCheckoutLocaleSlug } from "@/lib/browse-locale-server";
+import { getDisplayLanguage } from "@/lib/display-language-server";
 
 /** Locale-aware checkout server-action fallbacks and gateway copy. */
 export const getCheckoutServerTranslations = cache(async () => {
-	const locale = await getCheckoutLocaleSlug();
+	const locale = await getDisplayLanguage();
 	const [server, gateways] = await Promise.all([
 		getTranslations({ locale, namespace: "checkout.server" }),
 		getTranslations({ locale, namespace: "checkout.gateways" }),

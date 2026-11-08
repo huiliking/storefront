@@ -1,79 +1,85 @@
-import { getDefaultLocaleSlug, getLocaleDefinition, getStorefrontLocaleSlugs } from "@/config/locale";
-import { getConfiguredLocaleChannelPairs } from "@/config/locale-channel";
-import { getStaticStorefrontChannelSlugs } from "@/config/channels";
+import { getLocaleDefinition } from "@/config/locale";
+import { getDefaultStorefrontChannel, type StorefrontChannel } from "@/lib/channels/storefront-channels";
 import { buildStorefrontPath } from "@/lib/storefront-path";
-
-type LocaleChannelTarget = { locale: string; channel: string };
 
 /** Same suffix for every locale, or a per-locale suffix map (translated catalog slugs). */
 export type HreflangPathInput = string | Record<string, string>;
 
-function getHreflangTargets(fallbackChannel: string): LocaleChannelTarget[] {
-	const pairs = getConfiguredLocaleChannelPairs();
-	if (pairs) {
-		return pairs.map(({ locale, channel }) => ({ locale, channel }));
-	}
-
-	return getStorefrontLocaleSlugs().map((locale) => ({ locale, channel: fallbackChannel }));
-}
-
-function getXDefaultTarget(fallbackChannel: string): LocaleChannelTarget {
-	const pairs = getConfiguredLocaleChannelPairs();
-	const defaultLocale = getDefaultLocaleSlug();
-
-	if (pairs) {
-		const defaultPair = pairs.find((pair) => pair.locale === defaultLocale) ?? pairs[0];
-		if (defaultPair) return defaultPair;
-	}
-
-	const defaultChannel = getStaticStorefrontChannelSlugs()[0] ?? fallbackChannel;
-	return { locale: defaultLocale, channel: defaultChannel };
-}
+type LocaleChannelTarget = { locale: string; channel: string };
 
 function resolvePathSuffix(pathInput: HreflangPathInput, locale: string, fallbackSuffix: string): string {
 	if (typeof pathInput === "string") return pathInput;
-	return pathInput[locale] ?? pathInput[getDefaultLocaleSlug()] ?? fallbackSuffix;
+	return pathInput[locale] ?? fallbackSuffix;
 }
 
 /**
- * hreflang language key for a locale.
- *
- * - Locale×channel pairs configured → BCP 47 region form (`ja-JP`): each alternate is a
- *   language+market URL, so a region-aware code matches Google's guidance.
- * - No pairs (any locale × any channel) → language-only (`ja`): the same language may
- *   exist on multiple markets; claiming `ja-JP` for one channel would over-assert.
+ * One target per market locale paired in Saleor. When several channels list the same locale,
+ * prefer the current channel, then the default channel, then the first one listed.
  */
-function getHreflangLanguageKey(locale: string, regionAware: boolean): string | null {
-	const definition = getLocaleDefinition(locale);
-	if (!definition) return null;
-	return regionAware ? definition.bcp47 : definition.htmlLang;
+function getHreflangTargets(
+	channels: readonly StorefrontChannel[],
+	currentChannel: string,
+): LocaleChannelTarget[] {
+	const defaultSlug = getDefaultStorefrontChannel(channels)?.slug;
+	const rank = (slug: string) => (slug === currentChannel ? 0 : slug === defaultSlug ? 1 : 2);
+	const ordered = [...channels].sort((a, b) => rank(a.slug) - rank(b.slug));
+
+	const byLocale = new Map<string, LocaleChannelTarget>();
+	for (const channel of ordered) {
+		for (const locale of channel.locales) {
+			if (!byLocale.has(locale)) byLocale.set(locale, { locale, channel: channel.slug });
+		}
+	}
+	return [...byLocale.values()];
 }
 
 /**
- * hreflang alternates for browse URLs.
+ * hreflang alternates for browse URLs, from the locale↔channel pairs managed in Saleor (ADR 0008).
+ *
+ * Keys are region-aware BCP 47 (`fr-CA`): every alternate is a language + market URL. Alternates
+ * advertise **market locales** only — display languages (`?lang=`) are not separate URLs.
  * Pass a single path suffix, or a per-locale map when catalog slugs are translated (ADR 0004).
- * When `NEXT_PUBLIC_STOREFRONT_LOCALE_CHANNELS` is set, each locale uses its paired channel
- * and hreflang keys are region-aware (`ja-JP`); otherwise keys stay language-only (`ja`).
- * Includes `x-default` pointing at default locale + its channel.
+ * `x-default` points at the default channel in its default locale.
  */
 export function buildLocaleHreflangAlternates(
-	channel: string,
+	channels: readonly StorefrontChannel[],
+	currentChannel: string,
 	pathSuffix: HreflangPathInput,
 ): Record<string, string> {
 	const languages: Record<string, string> = {};
 	const fallbackSuffix = typeof pathSuffix === "string" ? pathSuffix : (Object.values(pathSuffix)[0] ?? "");
-	const regionAware = getConfiguredLocaleChannelPairs() !== null;
 
-	for (const { locale, channel: targetChannel } of getHreflangTargets(channel)) {
-		const languageKey = getHreflangLanguageKey(locale, regionAware);
-		if (!languageKey) continue;
-		const suffix = resolvePathSuffix(pathSuffix, locale, fallbackSuffix);
-		languages[languageKey] = buildStorefrontPath(locale, targetChannel, suffix);
+	for (const { locale, channel } of getHreflangTargets(channels, currentChannel)) {
+		const key = getLocaleDefinition(locale)?.bcp47;
+		if (!key) continue;
+		languages[key] = buildStorefrontPath(
+			locale,
+			channel,
+			resolvePathSuffix(pathSuffix, locale, fallbackSuffix),
+		);
 	}
 
-	const xDefault = getXDefaultTarget(channel);
-	const xDefaultSuffix = resolvePathSuffix(pathSuffix, xDefault.locale, fallbackSuffix);
-	languages["x-default"] = buildStorefrontPath(xDefault.locale, xDefault.channel, xDefaultSuffix);
+	const defaultChannel = getDefaultStorefrontChannel(channels);
+	if (defaultChannel) {
+		const { defaultLocale, slug } = defaultChannel;
+		languages["x-default"] = buildStorefrontPath(
+			defaultLocale,
+			slug,
+			resolvePathSuffix(pathSuffix, defaultLocale, fallbackSuffix),
+		);
+	}
 
 	return languages;
+}
+
+/** Market locales advertised as `og:locale:alternate` — the same set as hreflang, minus the current one. */
+export function getMarketOgAlternateLocales(
+	channels: readonly StorefrontChannel[],
+	currentLocale: string,
+): string[] {
+	const locales = new Set(channels.flatMap((channel) => channel.locales));
+	locales.delete(currentLocale as never);
+	return [...locales]
+		.map((locale) => getLocaleDefinition(locale)?.ogLocale)
+		.filter((value): value is string => Boolean(value));
 }

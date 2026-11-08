@@ -26,9 +26,13 @@ export const paperCacheLifeProfiles = {
 		revalidate: 1 * HOUR,
 		expire: 1 * DAY,
 	},
+	// Channels and locale↔channel pairs are managed in Saleor (channel metadata) and drive
+	// routing. CHANNEL_* webhooks are the primary freshness mechanism; the 15-minute backstop
+	// bounds how long a dropped webhook can leave a Dashboard change unseen. `expire` stays
+	// long so the last known list keeps serving if Saleor is unreachable.
 	channels: {
 		stale: 5 * MINUTE,
-		revalidate: 1 * DAY,
+		revalidate: 15 * MINUTE,
 		expire: 1 * WEEK,
 	},
 	// External search indexes are not busted by Saleor webhooks. A short TTL is the

@@ -22,11 +22,11 @@ describe("pickTranslatedName", () => {
 });
 
 describe("pickTranslatedSlug", () => {
-	it("prefers translated slug for URLs", () => {
+	it("prefers the market-locale translated slug for URLs", () => {
 		expect(
 			pickTranslatedSlug({
 				slug: "hoodie",
-				translation: { slug: "bluza" },
+				marketTranslation: { slug: "bluza" },
 			}),
 		).toBe("bluza");
 	});
@@ -35,7 +35,7 @@ describe("pickTranslatedSlug", () => {
 		expect(
 			pickTranslatedSlug({
 				slug: "hoodie",
-				translation: { slug: "" },
+				marketTranslation: { slug: "" },
 			}),
 		).toBe("hoodie");
 	});
@@ -46,11 +46,13 @@ describe("withTranslatedProductFields", () => {
 		const product = withTranslatedProductFields({
 			name: "Hoodie",
 			slug: "hoodie",
-			translation: { name: "Bluza", slug: "bluza" },
+			translation: { name: "Bluza" },
+			marketTranslation: { slug: "bluza" },
 			category: {
 				name: "Apparel",
 				slug: "apparel",
-				translation: { name: "Odzież", slug: "odziez" },
+				translation: { name: "Odzież" },
+				marketTranslation: { slug: "odziez" },
 			},
 			variants: [{ name: "M", translation: { name: "Średni" } }],
 		});

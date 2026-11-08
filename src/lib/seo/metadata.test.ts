@@ -1,19 +1,40 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import type { StorefrontChannel } from "@/lib/channels/storefront-channels";
+
+// Market locale↔channel pairs come from Saleor (ADR 0008) — mock the channel list.
+const channels: StorefrontChannel[] = [
+	{
+		id: "1",
+		slug: "default-channel",
+		name: "USD",
+		currencyCode: "USD",
+		defaultCountry: "US",
+		locales: ["en"],
+		defaultLocale: "en",
+		isDefault: true,
+	},
+	{
+		id: "2",
+		slug: "japan",
+		name: "JPY",
+		currencyCode: "JPY",
+		defaultCountry: "JP",
+		locales: ["ja"],
+		defaultLocale: "ja",
+		isDefault: false,
+	},
+];
+vi.mock("@/lib/channels/get-storefront-channels", () => ({
+	getStorefrontChannels: async () => channels,
+}));
+
 import { buildBrowsePageMetadata, buildPageMetadata, resolveSeoDescription } from "./metadata";
 
 type OgRecord = Record<string, unknown>;
 
 describe("buildBrowsePageMetadata OpenGraph locale", () => {
-	afterEach(() => {
-		vi.unstubAllEnvs();
-	});
-
-	it("sets og:locale from the URL locale and lists other locales as alternates", () => {
-		vi.stubEnv("NEXT_PUBLIC_STOREFRONT_LOCALES", "en,ja,pl");
-		vi.stubEnv("NEXT_PUBLIC_DEFAULT_CHANNEL", "default-channel");
-		vi.stubEnv("STOREFRONT_CHANNELS", "default-channel");
-
-		const metadata = buildBrowsePageMetadata({
+	it("sets og:locale from the URL locale and lists only other Saleor market locales", async () => {
+		const metadata = await buildBrowsePageMetadata({
 			title: "プリムソール",
 			locale: "ja",
 			channel: "japan",
@@ -22,33 +43,27 @@ describe("buildBrowsePageMetadata OpenGraph locale", () => {
 
 		const og = metadata.openGraph as OgRecord;
 		expect(og.locale).toBe("ja_JP");
-		expect(og.alternateLocale).toEqual(["en_US", "pl_PL"]);
-	});
-
-	it("limits og:locale:alternate to locales in the locale×channel matrix", () => {
-		vi.stubEnv("NEXT_PUBLIC_STOREFRONT_LOCALES", "en,ja,pl,de");
-		vi.stubEnv("NEXT_PUBLIC_DEFAULT_CHANNEL", "default-channel");
-		vi.stubEnv("STOREFRONT_CHANNELS", "default-channel,japan");
-		vi.stubEnv("NEXT_PUBLIC_STOREFRONT_LOCALE_CHANNELS", "en:default-channel,ja:japan");
-
-		const metadata = buildBrowsePageMetadata({
-			title: "プリムソール",
-			locale: "ja",
-			channel: "japan",
-			pathSuffix: "/products/purimusoru",
-		});
-
-		const og = metadata.openGraph as OgRecord;
-		expect(og.locale).toBe("ja_JP");
-		// pl/de are in STOREFRONT_LOCALES but not in the matrix — must not appear.
+		// Locales not paired with any Saleor channel (pl, de, …) must not appear.
 		expect(og.alternateLocale).toEqual(["en_US"]);
 	});
 
-	it("omits og:locale for unknown locale slugs", () => {
-		vi.stubEnv("NEXT_PUBLIC_STOREFRONT_LOCALES", "en");
-		vi.stubEnv("NEXT_PUBLIC_DEFAULT_CHANNEL", "default-channel");
+	it("builds hreflang alternates from Saleor pairs", async () => {
+		const metadata = await buildBrowsePageMetadata({
+			title: "Hoodie",
+			locale: "en",
+			channel: "default-channel",
+			pathSuffix: "/products/hoodie",
+		});
 
-		const metadata = buildBrowsePageMetadata({
+		expect(metadata.alternates?.languages).toMatchObject({
+			"en-US": "/en/default-channel/products/hoodie",
+			"ja-JP": "/ja/japan/products/hoodie",
+			"x-default": "/en/default-channel/products/hoodie",
+		});
+	});
+
+	it("omits og:locale for unknown locale slugs", async () => {
+		const metadata = await buildBrowsePageMetadata({
 			title: "Page",
 			locale: "zz",
 			channel: "default-channel",

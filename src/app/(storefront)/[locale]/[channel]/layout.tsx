@@ -1,37 +1,13 @@
 import { Suspense, type ReactNode } from "react";
 import { notFound } from "next/navigation";
-import { isStorefrontLocaleSlug } from "@/config/locale";
-import { isAllowedStorefrontChannel } from "@/config/channels";
-import { getConfiguredLocaleChannelPairs, isAllowedLocaleChannelPair } from "@/config/locale-channel";
-import { getStorefrontChannelSlugs } from "@/lib/channel-slugs";
+import { getStorefrontChannels } from "@/lib/channels/get-storefront-channels";
+import { isMarketPair } from "@/lib/channels/storefront-channels";
 
 /**
- * Generate static params for channel routes.
+ * Validate the locale↔channel pair against Saleor, then render children.
  *
- * Uses NEXT_PUBLIC_DEFAULT_CHANNEL as fallback.
- * Prefer STOREFRONT_CHANNELS allowlist; API discovery is opt-in via STOREFRONT_DISCOVER_CHANNELS.
- */
-export const generateStaticParams = async () => {
-	const configuredPairs = getConfiguredLocaleChannelPairs();
-	if (configuredPairs) {
-		const channels = [...new Set(configuredPairs.map((pair) => pair.channel))];
-		return channels.map((channel) => ({ channel }));
-	}
-
-	const channels = await getStorefrontChannelSlugs();
-
-	if (channels.length === 0) {
-		console.warn(
-			"[Channels] No channels configured. Set NEXT_PUBLIC_DEFAULT_CHANNEL or STOREFRONT_CHANNELS.",
-		);
-		return [];
-	}
-
-	return channels.map((channel) => ({ channel }));
-};
-
-/**
- * Validate locale/channel, then render children.
+ * Valid only when the channel is active, opted in (`storefront.locales` metadata), and lists
+ * this locale. Everything else is not-found — no redirects.
  *
  * Must wrap `{children}` so invalid routes never fetch/render before `notFound()`.
  * Must NOT use `fallback={children}` — that re-renders the browse tree as the Suspense
@@ -47,13 +23,8 @@ async function ChannelRouteGuard({
 	params: Promise<{ locale: string; channel: string }>;
 }) {
 	const { locale, channel } = await params;
-	const allowedSlugs = await getStorefrontChannelSlugs();
 
-	if (
-		!isStorefrontLocaleSlug(locale) ||
-		!isAllowedStorefrontChannel(channel, allowedSlugs) ||
-		!isAllowedLocaleChannelPair(locale, channel)
-	) {
+	if (!isMarketPair(await getStorefrontChannels(), locale, channel)) {
 		notFound();
 	}
 

@@ -35,7 +35,10 @@ export type ListingPageRequest =
 export type ListingQuery = {
 	surface: ListingSurface;
 	channel: string;
+	/** Market locale (URL) — link slugs. */
 	locale: string;
+	/** Display language — product names and price formatting. Defaults to `locale`. */
+	displayLanguage?: string;
 	/** Value facets. OR within a facet, AND across facets. */
 	selections: Record<string, string[]>;
 	range?: Partial<Record<string, { min?: number; max?: number }>>;

@@ -9,6 +9,7 @@ import { listingProviderFor } from "@/lib/listing/registry";
 import { templates } from "@/config/templates";
 import { CategoryHero, PlpListingClient } from "@/ui/components/plp";
 import { buildStorefrontPath } from "@/lib/storefront-path";
+import { getDisplayLanguage } from "@/lib/display-language-server";
 
 // Prefetch: default (auto) under global `partialPrefetching` — App Shell only.
 // Do not put `prefetch={true}` on header chrome or homepage CTAs (`eslint` bans it).
@@ -17,7 +18,7 @@ export async function generateMetadata(props: {
 	params: Promise<{ locale: string; channel: string }>;
 }): Promise<Metadata> {
 	const params = await props.params;
-	const { surfaces } = await getStorefrontContent(params.channel, params.locale);
+	const { surfaces } = await getStorefrontContent(params.channel, await getDisplayLanguage());
 
 	return buildBrowsePageMetadata({
 		title: surfaces.products.title,
@@ -39,9 +40,9 @@ type PageProps = {
 export default async function Page(props: PageProps) {
 	const params = await props.params;
 	const [{ surfaces }, tListing, tNav] = await Promise.all([
-		getStorefrontContent(params.channel, params.locale),
-		getTranslations({ locale: params.locale, namespace: "productsListing" }),
-		getTranslations({ locale: params.locale, namespace: "nav" }),
+		getStorefrontContent(params.channel, await getDisplayLanguage()),
+		getTranslations({ locale: await getDisplayLanguage(), namespace: "productsListing" }),
+		getTranslations({ locale: await getDisplayLanguage(), namespace: "nav" }),
 	]);
 	const productsCopy = surfaces.products;
 
@@ -85,6 +86,7 @@ async function ProductsContent({
 	const payload = await loadListingView({
 		surface: "all",
 		locale: params.locale,
+		displayLanguage: await getDisplayLanguage(),
 		channel: params.channel,
 		view: {},
 	});

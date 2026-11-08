@@ -1,16 +1,17 @@
 import "server-only";
 
 import { PageGetBySlugDocument, type LanguageCodeEnum } from "@/gql/graphql";
-import { graphqlLanguageCodeVariables } from "@/lib/graphql-locale";
+import { graphqlContentAndSlugVariables } from "@/lib/graphql-locale";
 import { withTranslatedPageFields } from "@/lib/saleor-translations";
 import { CACHE_PROFILES, cachedQuery } from "@/lib/saleor";
 import { resolveByPossiblyTranslatedSlug } from "@/lib/catalog/resolve-by-slug";
 import { tagPrimaryCatalogSlug } from "@/lib/catalog/tag-primary-slug";
 
-export async function getPageData(slug: string, localeSlug: string) {
+export async function getPageData(slug: string, localeSlug: string, displayLanguage: string = localeSlug) {
 	"use cache";
 	const decodedSlug = decodeURIComponent(slug);
-	const languageVariables = graphqlLanguageCodeVariables(localeSlug);
+	// URL slug lookup follows the market locale (`localeSlug`); content follows the display language.
+	const languageVariables = graphqlContentAndSlugVariables(localeSlug, displayLanguage);
 
 	const fetchPage = async (vars: { slug: string; slugLanguageCode?: LanguageCodeEnum }) => {
 		const data = await cachedQuery(PageGetBySlugDocument, {

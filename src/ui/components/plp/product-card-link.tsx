@@ -1,6 +1,7 @@
 "use client";
 
-import Link, { useLinkStatus } from "next/link";
+import { useLinkStatus } from "next/link";
+import Link from "@/ui/atoms/storefront-link";
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 

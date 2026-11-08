@@ -19,7 +19,10 @@ import { resolveSelectedVariantId, type Product } from "./gallery-utils";
 interface VariantSectionDynamicProps {
 	product: Product;
 	channel: string;
+	/** Market locale (URL) — cart action. */
 	localeSlug: string;
+	/** Display language — labels, prices, variant names. */
+	displayLanguage: string;
 	searchParams: Promise<{ variant?: string; sku?: string }>;
 }
 
@@ -36,16 +39,17 @@ export async function VariantSectionDynamic({
 	product,
 	channel,
 	localeSlug,
+	displayLanguage,
 	searchParams,
 }: VariantSectionDynamicProps) {
 	const { variant: variantParam, sku: skuParam } = await searchParams;
-	const intlLocale = resolveLocaleFromSlug(localeSlug).bcp47;
+	const intlLocale = resolveLocaleFromSlug(displayLanguage).bcp47;
 
 	const [t, content, currency, variantResult] = await Promise.all([
-		getTranslations({ locale: localeSlug, namespace: "pdp" }),
-		getStorefrontContent(channel, localeSlug),
+		getTranslations({ locale: displayLanguage, namespace: "pdp" }),
+		getStorefrontContent(channel, displayLanguage),
 		resolveChannelCurrency(channel),
-		resolvePdpVariants(product, channel, localeSlug, {
+		resolvePdpVariants(product, channel, displayLanguage, {
 			variantId: variantParam,
 			sku: skuParam,
 		}),

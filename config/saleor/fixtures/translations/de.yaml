@@ -16,6 +16,7 @@ pages:
     hero-subheading: "Premium-Produkte von außergewöhnlicher Qualität. Entdecken Sie unsere kuratierte Auswahl."
     hero-cta-label: "Alles shoppen"
     featured-heading: "Empfohlene Produkte"
+    categories-heading: "Nach Kategorie shoppen"
     brand-story-heading: "Für echten Handel gebaut"
     brand-story-paragraph-1: "Paper ist ein minimaler, produktionsreifer Storefront für Saleor — sauber wie eine leere Seite, bereit zum Start."
     brand-story-paragraph-2: "Passen Sie Bereiche im Code an, verbinden Sie Ihren Katalog und nutzen Sie erprobte Warenkorb-, Checkout- und Produktseiten."

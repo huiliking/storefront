@@ -28,7 +28,9 @@ Rule of thumb: _Would a merchant reword this per shop?_ → CMS. Otherwise → m
 ## Locales
 
 - **Definitions:** `src/config/locale.ts` (`LOCALE_DEFINITIONS`) — slug, BCP 47, Saleor `graphqlLanguageCode`, `htmlLang`.
-- **Allowlist:** `NEXT_PUBLIC_STOREFRONT_LOCALES` (must be `NEXT_PUBLIC_*` — server and client read it).
+- **Display languages:** `NEXT_PUBLIC_STOREFRONT_DISPLAY_LANGUAGES` — which `messages/*.json` the storefront renders. The
+  next-intl locale is the **display language** (`?lang=` → browser → market locale, resolved in middleware), not the
+  URL locale; server code uses `getTranslations({ locale: await getDisplayLanguage(), … })` (ADR 0008).
 - **Files:** one JSON per slug: `messages/en.json`, `messages/pl.json`, …
 - **Types:** `src/i18n/types.d.ts` augments next-intl from `en.json` (source of truth).
 - **Loader:** `src/i18n/request.ts` — dynamic import by locale filename; keep aligned with `LOCALE_DEFINITIONS`.

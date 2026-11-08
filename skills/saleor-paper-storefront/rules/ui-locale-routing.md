@@ -58,15 +58,21 @@ Bare `/en/…` without channel is ambiguous for pricing and stock.
 
 ## Conventions (lock when implementing)
 
-1. **Canonical** — always `/{locale}/{channel}/…`; 301 legacy `/{channel}/…` during migration.
+1. **Canonical** — always `/{locale}/{channel}/…`, where `{locale}` is the **market locale** paired with the channel
+   in Saleor (ADR 0008). No redirects: legacy `/{channel}/…` and unpaired combinations are not-found.
 2. **Locale slugs** — lowercase BCP 47; map to Saleor in `src/config/locale.ts` (`graphqlLanguageCode`, `htmlLang`, `Intl` locale).
-3. **Root `/`** → `/{defaultLocale}/{defaultChannel}/`.
-4. **Allowlist** — valid `(locale, channel)` pairs from config; invalid → `notFound()` or redirect.
-5. **Picker behavior** — swap one segment, preserve path suffix; confirm if cart channel changes (market switch warns when cart cookie exists).
-6. **Cache keys** — pass `localeSlug` into every `"use cache"` catalog/menu fetch; Next.js caches each locale separately (same TTL/speed per language).
-7. **Cache tags** — catalog tags stay slug-scoped (`product:{slug}`); webhooks fan out paths via `buildPathsForAllLocales()`. Storefront content uses `storefront-content:{channel}:{locale}` (BCP 47). See `data-caching.md`.
-8. **Locale×channel pairs** — optional `NEXT_PUBLIC_STOREFRONT_LOCALE_CHANNELS=en:uk,ja:japan`. When set: invalid pairs 404; language switch navigates to the paired channel; region picker filters locales per market; hreflang keys use `bcp47` (`ja-JP`). When unset: any allowed locale × channel is valid, language switch keeps the current channel, hreflang keys stay language-only (`ja`). Must be `NEXT_PUBLIC_` — server (404 guard, hreflang) and client picker/nav share it. See `src/config/locale-channel.ts`, `seo-metadata.md`.
-9. **`x-default`** — same as `NEXT_PUBLIC_DEFAULT_LOCALE` (+ that locale’s channel). Intentionally not a separate env.
+3. **Root `/`** → the `storefront.default` channel in its default locale (static 307; does not carry `?lang=`).
+4. **Pairs** — `storefront.locales` channel metadata in Saleor; `[channel]/layout.tsx` → `notFound()` otherwise.
+5. **Two controls** — market selector (header left) swaps `/{locale}/{channel}` (confirm if the cart's channel
+   changes); language picker (header right) sets `?lang=` only, with a full page load.
+6. **Display language** — `?lang=` → browser `Accept-Language` → market locale → default, resolved in
+   `src/middleware.ts` and read with `getDisplayLanguage()`. Pass it (not `params.locale`) into `"use cache"`
+   content fetches and `getTranslations`; URL slugs and links keep the market locale (`marketTranslation`).
+7. **Cache tags** — catalog tags stay slug-scoped (`product:{slug}`); storefront content uses
+   `storefront-content:{channel}:{locale}` (BCP 47 of the display language). See `data-caching.md`.
+8. **Carrying `?lang=`** — internal links use `StorefrontLink` / `LinkWithChannel`; navigations use
+   `useWithDisplayLanguage()` / `withCurrentDisplayLanguage()`; server redirects use `storefrontHrefWithLanguage()`.
+9. **`x-default`** — the default channel in its default locale. Intentionally not a separate env.
 
 ---
 

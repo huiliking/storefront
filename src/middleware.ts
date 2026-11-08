@@ -1,43 +1,30 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { DefaultChannelSlug } from "@/app/config";
-import { getStaticStorefrontChannelSlugs, isAllowedStorefrontChannel } from "@/config/channels";
-import { getDefaultLocaleSlug, isLocaleSlug, isStorefrontLocaleSlug } from "@/config/locale";
-import { BROWSE_LOCALE_COOKIE, getBrowseLocaleCookieOptions } from "@/lib/browse-locale";
-import { buildStorefrontPath } from "@/lib/storefront-path";
+import { getStorefrontLocaleSlugs, isLocaleSlug } from "@/config/locale";
+import {
+	DISPLAY_LANGUAGE_EXPLICIT_HEADER,
+	DISPLAY_LANGUAGE_HEADER,
+	DISPLAY_LANGUAGE_PARAM,
+	matchDisplayLanguage,
+	resolveDisplayLanguage,
+} from "@/lib/display-language";
 
-const RESERVED_ROOT_SEGMENTS = new Set([
-	"api",
-	"checkout",
-	"order",
-	"_next",
-	"favicon.ico",
-	"robots.txt",
-	"sitemap.xml",
-]);
+/** Locale-less surfaces that carry the market locale as `?locale=` (set by the storefront's links). */
+const LOCALE_LESS_SURFACES = new Set(["checkout", "order"]);
 
-function isChannelSlug(segment: string): boolean {
-	const allowed = getStaticStorefrontChannelSlugs();
-	return isAllowedStorefrontChannel(segment, allowed);
-}
+const RESERVED_ROOT_SEGMENTS = new Set(["api", "_next", "favicon.ico", "robots.txt", "sitemap.xml"]);
 
-function withBrowseLocaleCookie(request: NextRequest, response: NextResponse, locale: string): NextResponse {
-	if (!isStorefrontLocaleSlug(locale)) {
-		return response;
-	}
-
-	// Skip Set-Cookie when the value is already correct — re-setting on every HTML response
-	// marks responses as uncacheable at shared CDNs even when nothing changed.
-	const current = request.cookies.get(BROWSE_LOCALE_COOKIE)?.value;
-	if (current === locale) {
-		return response;
-	}
-
-	response.cookies.set(BROWSE_LOCALE_COOKIE, locale, getBrowseLocaleCookieOptions());
-	return response;
-}
-
+/**
+ * Display-language resolver (ADR 0008) — the middleware's only job.
+ *
+ * Layouts cannot read `?lang=`, so the display language is resolved once here and handed to
+ * layouts, pages and server actions as request headers:
+ *   `?lang=` → browser `Accept-Language` → market locale (URL segment, or `?locale=` on
+ *   checkout/order) → storefront default.
+ * No cookie, no channel list, no redirects — `[channel]/layout.tsx` validates `/{locale}/{channel}`
+ * against Saleor.
+ */
 export function middleware(request: NextRequest) {
-	const { pathname } = request.nextUrl;
+	const { pathname, searchParams } = request.nextUrl;
 
 	if (
 		pathname.startsWith("/_next") ||
@@ -47,77 +34,45 @@ export function middleware(request: NextRequest) {
 		return NextResponse.next();
 	}
 
-	const segments = pathname.split("/").filter(Boolean);
-	const defaultLocale = getDefaultLocaleSlug();
-	const defaultChannel = DefaultChannelSlug ?? getStaticStorefrontChannelSlugs()[0];
+	const [first] = pathname.split("/").filter(Boolean);
 
-	// Root → default browse home
-	if (segments.length === 0) {
-		if (!defaultChannel) {
-			return NextResponse.next();
-		}
-		const url = request.nextUrl.clone();
-		url.pathname = buildStorefrontPath(defaultLocale, defaultChannel);
-		return withBrowseLocaleCookie(request, NextResponse.redirect(url, 308), defaultLocale);
-	}
-
-	const [first, second, ...rest] = segments;
-
-	if (RESERVED_ROOT_SEGMENTS.has(first)) {
+	if (first && RESERVED_ROOT_SEGMENTS.has(first)) {
 		return NextResponse.next();
 	}
 
-	// Disabled locale slug (defined but not in NEXT_PUBLIC_STOREFRONT_LOCALES) → canonical default locale
-	if (isLocaleSlug(first) && !isStorefrontLocaleSlug(first)) {
-		if (second && isChannelSlug(second)) {
-			const url = request.nextUrl.clone();
-			const suffix = rest.length > 0 ? `/${rest.join("/")}` : "";
-			url.pathname = buildStorefrontPath(defaultLocale, second, suffix);
-			return withBrowseLocaleCookie(request, NextResponse.redirect(url, 308), defaultLocale);
-		}
-		return NextResponse.next();
-	}
+	const marketCandidate = first && LOCALE_LESS_SURFACES.has(first) ? searchParams.get("locale") : first;
+	const marketLocale = marketCandidate && isLocaleSlug(marketCandidate) ? marketCandidate : null;
+	const langParam = searchParams.get(DISPLAY_LANGUAGE_PARAM);
 
-	// Canonical format: /{locale}/{channel}/…
-	if (isStorefrontLocaleSlug(first)) {
-		if (second && isChannelSlug(second)) {
-			return withBrowseLocaleCookie(request, NextResponse.next(), first);
-		}
+	const requestHeaders = new Headers(request.headers);
+	requestHeaders.set(
+		DISPLAY_LANGUAGE_HEADER,
+		resolveDisplayLanguage({
+			lang: langParam,
+			acceptLanguage: request.headers.get("accept-language"),
+			marketLocale,
+		}),
+	);
 
-		// /{locale} only → add default channel
-		if (!second && defaultChannel) {
-			const url = request.nextUrl.clone();
-			url.pathname = buildStorefrontPath(first, defaultChannel);
-			return withBrowseLocaleCookie(request, NextResponse.redirect(url, 308), first);
-		}
+	// Explicit picker choice — links and redirects carry it on as `?lang=`.
+	const explicit = matchDisplayLanguage(langParam, getStorefrontLocaleSlugs());
+	if (explicit) requestHeaders.set(DISPLAY_LANGUAGE_EXPLICIT_HEADER, explicit);
+	else requestHeaders.delete(DISPLAY_LANGUAGE_EXPLICIT_HEADER);
 
-		return NextResponse.next();
-	}
-
-	// Legacy: /{channel}/… → /{defaultLocale}/{channel}/…
-	if (isChannelSlug(first)) {
-		const url = request.nextUrl.clone();
-		const suffix = [second, ...rest].filter(Boolean).join("/");
-		url.pathname = buildStorefrontPath(defaultLocale, first, suffix ? `/${suffix}` : "");
-		return withBrowseLocaleCookie(request, NextResponse.redirect(url, 308), defaultLocale);
-	}
-
-	return NextResponse.next();
+	// No `Vary: Accept-Language` needed: storefront and checkout HTML is per request and sent as
+	// `Cache-Control: private, no-store`, so no shared cache stores one browser's language.
+	return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
 export const config = {
 	/**
-	 * Vercel bills an Edge Middleware invocation for every matched request, including the
-	 * ones this function immediately no-ops on. Excluding them here means they are never
-	 * invoked at all: API routes, the checkout surface, all `_next` internals, and any
-	 * path ending in a file extension (public/ assets, fonts, icons — this also covers
-	 * favicon.ico, robots.txt and sitemap.xml).
+	 * Runs on storefront pages and the checkout / order surfaces (their display language comes from
+	 * here too). Excluded: API routes, `_next` internals, and any path ending in a file extension
+	 * (public assets, fonts, icons, favicon.ico, robots.txt, sitemap.xml). Self-hosted, so the
+	 * per-invocation billing that once excluded checkout does not apply.
 	 *
-	 * Prefixes are anchored with `/` or `$` so they exclude `/api/…` without also
-	 * excluding a channel or locale slug that merely starts with those letters.
-	 *
-	 * The equivalent guards at the top of `middleware()` stay as a backstop for runtimes
-	 * that apply the matcher differently (self-hosted, `next start`).
+	 * The guards at the top of `middleware()` stay as a backstop for runtimes that apply the
+	 * matcher differently (`next start`).
 	 */
-	matcher: ["/((?!api/|api$|checkout/|checkout$|order/|order$|_next/|.*\\.[\\w]+$).*)"],
+	matcher: ["/((?!api/|api$|_next/|.*\\.[\\w]+$).*)"],
 };

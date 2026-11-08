@@ -4,6 +4,8 @@ import { Logo as SharedLogo } from "@/ui/components/shared/logo";
 import { UserMenuSkeleton } from "@/ui/components/nav/components/user-menu/user-menu-container";
 import {
 	HeaderActionsSlot,
+	HeaderLanguageSlot,
+	HeaderMarketSlot,
 	HeaderMobileMenuSlot,
 	HeaderNavSlot,
 	HeaderSearchSlot,
@@ -35,9 +37,14 @@ export function BrowseHeaderFrame({ params }: { params: BrowseRouteParams }) {
 		>
 			<div className="container-nav">
 				<div className="flex h-16 items-center justify-between gap-4">
-					<Suspense fallback={<HeaderLogoFallback />}>
-						<Logo />
-					</Suspense>
+					<div className="flex shrink-0 items-center gap-3">
+						<Suspense fallback={<HeaderLogoFallback />}>
+							<Logo />
+						</Suspense>
+						<Suspense fallback={null}>
+							<HeaderMarketSlot />
+						</Suspense>
+					</div>
 
 					<Suspense
 						fallback={
@@ -63,6 +70,7 @@ export function BrowseHeaderFrame({ params }: { params: BrowseRouteParams }) {
 					</Suspense>
 
 					<div className="flex items-center gap-1">
+						<HeaderLanguageSlot />
 						<Suspense fallback={<HeaderActionsSkeleton />}>
 							<HeaderActionsSlot params={params} />
 						</Suspense>

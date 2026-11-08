@@ -16,6 +16,7 @@ pages:
     hero-subheading: "卓越した品質のプレミアム商品。丁寧に選んだセレクションをお楽しみください。"
     hero-cta-label: "すべて見る"
     featured-heading: "おすすめ商品"
+    categories-heading: "カテゴリーから探す"
     brand-story-heading: "実際のコマースのために設計"
     brand-story-paragraph-1: "PaperはSaleor向けのミニマルで本番運用可能なストアフロントです — 白紙のように清潔で、すぐにデプロイできます。"
     brand-story-paragraph-2: "コードでセクションをカスタマイズし、カタログをつなぎ、実績のあるカート・チェックアウト・商品ページをそのまま活用できます。"

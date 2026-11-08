@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import Link from "@/ui/atoms/storefront-link";
 import { useTranslations } from "next-intl";
 import { CheckCircle, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { confirmAccountWithBffDeduped } from "@/lib/auth/confirm-account-client";

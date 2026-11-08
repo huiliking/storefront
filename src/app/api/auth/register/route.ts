@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { rejectIfRateLimited } from "@/lib/auth/auth-rate-limit";
 import { isAllowedRedirectUrl } from "@/lib/auth/validate-redirect-url";
 import { rawMutation, asValidationError, getUserMessage } from "@/lib/saleor";
+import { getDocumentLanguageCode } from "@/lib/channels/document-language";
 
 const REGISTER_MUTATION = `
   mutation AccountRegister($input: AccountRegisterInput!) {
@@ -86,6 +87,8 @@ export async function POST(request: NextRequest) {
 				lastName: lastName || "",
 				channel,
 				redirectUrl,
+				// Account emails follow the channel's default locale (ADR 0008).
+				languageCode: await getDocumentLanguageCode(channel),
 			},
 		},
 	});

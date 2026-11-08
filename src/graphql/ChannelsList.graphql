@@ -8,5 +8,14 @@ query ChannelsList {
 		defaultCountry {
 			code
 		}
+		# Storefront market config: Saleor fields (Phase 2) preferred, public metadata as fallback
+		# (see lib/channels/storefront-channels.ts, ADR 0008).
+		storefrontLocales
+		defaultLocale
+		isStorefrontVisible
+		metadata {
+			key
+			value
+		}
 	}
 }

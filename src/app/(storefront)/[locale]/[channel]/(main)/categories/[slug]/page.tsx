@@ -14,6 +14,7 @@ import { templates } from "@/config/templates";
 import { CategoryHero, PlpListingClient } from "@/ui/components/plp";
 import { buildStorefrontPath } from "@/lib/storefront-path";
 import { pickTranslatedSlug } from "@/lib/saleor-translations";
+import { getDisplayLanguage } from "@/lib/display-language-server";
 
 // Prefetch: default (auto) under global `partialPrefetching` — App Shell only. Category
 // tiles deliberately do not opt into `prefetch={true}`: one runtime prefetch per tile in a
@@ -33,7 +34,12 @@ type PageProps = {
 
 export const generateMetadata = async (props: PageProps): Promise<Metadata> => {
 	const params = await props.params;
-	const category = await getCategoryData(params.slug, params.channel, params.locale);
+	const category = await getCategoryData(
+		params.slug,
+		params.channel,
+		params.locale,
+		await getDisplayLanguage(),
+	);
 	const plainDescription = parseEditorJSToText(category?.description);
 
 	return buildBrowsePageMetadata({
@@ -57,9 +63,14 @@ export const generateMetadata = async (props: PageProps): Promise<Metadata> => {
 export default async function Page(props: PageProps) {
 	const resolvedParams = await props.params;
 	const [category, tListing, tNav] = await Promise.all([
-		getCategoryData(resolvedParams.slug, resolvedParams.channel, resolvedParams.locale),
-		getTranslations({ locale: resolvedParams.locale, namespace: "productsListing" }),
-		getTranslations({ locale: resolvedParams.locale, namespace: "nav" }),
+		getCategoryData(
+			resolvedParams.slug,
+			resolvedParams.channel,
+			resolvedParams.locale,
+			await getDisplayLanguage(),
+		),
+		getTranslations({ locale: await getDisplayLanguage(), namespace: "productsListing" }),
+		getTranslations({ locale: await getDisplayLanguage(), namespace: "nav" }),
 	]);
 
 	if (!category) {
@@ -124,7 +135,12 @@ export default async function Page(props: PageProps) {
 
 async function CategoryProducts({ params: paramsPromise }: { params: PageProps["params"] }) {
 	const params = await paramsPromise;
-	const category = await getCategoryData(params.slug, params.channel, params.locale);
+	const category = await getCategoryData(
+		params.slug,
+		params.channel,
+		params.locale,
+		await getDisplayLanguage(),
+	);
 	if (!category) {
 		notFound();
 	}
@@ -132,6 +148,7 @@ async function CategoryProducts({ params: paramsPromise }: { params: PageProps["
 	const payload = await loadListingView({
 		surface: "category",
 		locale: params.locale,
+		displayLanguage: await getDisplayLanguage(),
 		channel: params.channel,
 		slug: category.slug,
 		view: {},

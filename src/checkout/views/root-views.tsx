@@ -2,8 +2,7 @@
 
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { DefaultChannelSlug } from "@/app/config";
-import { useCheckoutBrowseLocale } from "@/checkout/providers/checkout-browse";
+import { useCheckoutBrowseLocale, useCheckoutDefaultChannel } from "@/checkout/providers/checkout-browse";
 import { buildStorefrontPath } from "@/lib/storefront-path";
 import {
 	getEmailAndTokenFromSearchParams,
@@ -23,6 +22,7 @@ import {
 } from "@/checkout/views/saleor-checkout";
 import { EmptyCartPage } from "@/checkout/views/empty-cart-page";
 import { useCheckoutContent } from "@/lib/content";
+import { useWithDisplayLanguage } from "@/ui/atoms/display-language-context";
 
 function shouldPrioritizeAccountConfirmation(
 	searchParams: URLSearchParams,
@@ -44,6 +44,8 @@ export const RootViews = () => {
 	const { emptySession } = useCheckoutContent();
 	const t = useTranslations("checkout.errors");
 	const storefrontLocale = useCheckoutBrowseLocale();
+	const defaultChannel = useCheckoutDefaultChannel();
+	const withLang = useWithDisplayLanguage();
 	const searchParams = useSearchParams();
 	const { loadState, checkout } = useCheckoutData();
 	const transition = useCheckoutTransition();
@@ -56,8 +58,8 @@ export const RootViews = () => {
 	}
 
 	if (accountCredentials && shouldPrioritizeAccountConfirmation(searchParams, loadState)) {
-		const channel = checkout?.channel.slug ?? DefaultChannelSlug ?? "default-channel";
-		const signInHref = buildStorefrontPath(storefrontLocale, channel, "/login");
+		const channel = checkout?.channel.slug ?? defaultChannel ?? "default-channel";
+		const signInHref = withLang(buildStorefrontPath(storefrontLocale, channel, "/login"));
 
 		return (
 			<ConfirmAccountMode
@@ -66,7 +68,7 @@ export const RootViews = () => {
 				locale={storefrontLocale}
 				channel={channel}
 				signInHref={signInHref}
-				continueShoppingHref={buildStorefrontPath(storefrontLocale, channel)}
+				continueShoppingHref={withLang(buildStorefrontPath(storefrontLocale, channel))}
 				onConfirmed={() => {
 					const cleaned = createQueryString(searchParams, {
 						accountConfirm: null,

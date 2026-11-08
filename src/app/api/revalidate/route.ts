@@ -1,7 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { NextRequest } from "next/server";
-import { DefaultChannelSlug } from "@/app/config";
-import { getStorefrontChannelSlugs } from "@/lib/channel-slugs";
+import { getStorefrontChannels } from "@/lib/channels/get-storefront-channels";
+import { getDefaultStorefrontChannel } from "@/lib/channels/storefront-channels";
 import {
 	CACHE_PROFILES,
 	buildTag,
@@ -134,6 +134,18 @@ function parseWebhookPayload(payload: unknown): ParsedWebhookPayload {
 
 type TagEntry = { tag: string; profile: CacheProfile["cacheProfile"] };
 
+const NO_CHANNELS_HINT =
+	"No storefront channels in Saleor. Add `storefront.locales` metadata to an active channel (Dashboard → Channels).";
+
+/** Storefront channels from Saleor (channel metadata) — slugs plus the default channel slug. */
+async function resolveSaleorChannels(): Promise<{ slugs: string[]; defaultSlug: string | undefined }> {
+	const channels = await getStorefrontChannels();
+	return {
+		slugs: channels.map((channel) => channel.slug),
+		defaultSlug: getDefaultStorefrontChannel(channels)?.slug,
+	};
+}
+
 /**
  * Queue an entity tag for revalidation.
  *
@@ -206,14 +218,25 @@ export async function POST(request: NextRequest) {
 		const revalidatedPaths: string[] = [];
 		const tagEntries: TagEntry[] = [];
 
+		// CHANNEL_* events (create / update / delete / status / metadata in the Dashboard) refresh
+		// the Saleor channel list that drives routing and selectors. Handled first: it must not
+		// depend on reading the very list it is about to refresh.
+		if (type === "channel") {
+			const profile = CACHE_PROFILES.channels;
+			const revalidatedTags = await revalidateTags([
+				{ tag: buildTag(profile), profile: profile.cacheProfile },
+			]);
+			console.log("[Revalidate] Success:", { type, tags: revalidatedTags });
+			return Response.json({ paths: [], tags: revalidatedTags, success: true });
+		}
+
+		const saleorChannels = await resolveSaleorChannels();
+
 		if (type === "menu") {
-			const plan = planMenuRevalidation(slug, await getStorefrontChannelSlugs());
+			const plan = planMenuRevalidation(slug, saleorChannels.slugs);
 
 			if (plan.action === "error") {
-				console.warn(
-					"[Revalidate] Menu webhook: no storefront channels resolved. " +
-						"Set NEXT_PUBLIC_DEFAULT_CHANNEL or STOREFRONT_CHANNELS.",
-				);
+				console.warn(`[Revalidate] Menu webhook: ${NO_CHANNELS_HINT}`);
 				return Response.json({ error: "No storefront channels configured" }, { status: 400 });
 			}
 
@@ -237,16 +260,14 @@ export async function POST(request: NextRequest) {
 			return Response.json({ paths: revalidatedPaths, tags: revalidatedTags, success: true });
 		}
 
-		const storefrontChannels = await getStorefrontChannelSlugs();
+		const storefrontChannels = saleorChannels.slugs;
+		const defaultChannelSlug = saleorChannels.defaultSlug;
 
 		if (type === "page") {
-			const plan = planPageRevalidation(slug, storefrontChannels, DefaultChannelSlug);
+			const plan = planPageRevalidation(slug, storefrontChannels, defaultChannelSlug);
 
 			if (plan.action === "error") {
-				console.warn(
-					"[Revalidate] Page webhook: no storefront channels resolved. " +
-						"Set NEXT_PUBLIC_DEFAULT_CHANNEL or STOREFRONT_CHANNELS.",
-				);
+				console.warn(`[Revalidate] Page webhook: ${NO_CHANNELS_HINT}`);
 				return Response.json({ error: "No storefront channels configured" }, { status: 400 });
 			}
 
@@ -264,7 +285,7 @@ export async function POST(request: NextRequest) {
 			const storefrontPlan = planStorefrontContentRevalidation(
 				plan.slug,
 				storefrontChannels,
-				DefaultChannelSlug,
+				defaultChannelSlug,
 			);
 			if (storefrontPlan.action === "revalidate") {
 				tagEntries.push(...storefrontPlan.tags);
@@ -286,19 +307,10 @@ export async function POST(request: NextRequest) {
 			return Response.json({ paths: revalidatedPaths, tags: revalidatedTags, success: true });
 		}
 
-		if (type === "channel") {
-			const profile = CACHE_PROFILES.channels;
-			const revalidatedTags = await revalidateTags([
-				{ tag: buildTag(profile), profile: profile.cacheProfile },
-			]);
-			console.log("[Revalidate] Success:", { type, tags: revalidatedTags });
-			return Response.json({ paths: [], tags: revalidatedTags, success: true });
-		}
-
-		const targetChannel = channel || DefaultChannelSlug;
+		const targetChannel = channel || defaultChannelSlug;
 		if (!targetChannel) {
 			return Response.json(
-				{ error: "Channel not specified in webhook and NEXT_PUBLIC_DEFAULT_CHANNEL not set" },
+				{ error: `Channel not specified in webhook. ${NO_CHANNELS_HINT}` },
 				{ status: 400 },
 			);
 		}
@@ -412,13 +424,10 @@ export async function GET(request: NextRequest) {
 			revalidatePath("/", "layout");
 			revalidatedPaths.push("/ (all routes)");
 
-			const channelSlugs = await getStorefrontChannelSlugs();
+			const channelSlugs = (await resolveSaleorChannels()).slugs;
 			const tagEntries = planFullPurgeTagEntries(channelSlugs);
 			if (channelSlugs.length === 0) {
-				console.warn(
-					"[Revalidate] Full purge: no channel slugs resolved — channel/locale-scoped tags skipped. " +
-						"Set NEXT_PUBLIC_DEFAULT_CHANNEL or STOREFRONT_CHANNELS.",
-				);
+				console.warn(`[Revalidate] Full purge: channel/locale-scoped tags skipped. ${NO_CHANNELS_HINT}`);
 			}
 
 			revalidatedTags.push(...(await revalidateTags(tagEntries)));

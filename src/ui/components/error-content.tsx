@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import Link from "next/link";
+import Link from "@/ui/atoms/storefront-link";
 import { AlertCircle, RefreshCw, Home, ArrowLeft } from "lucide-react";
 import { buttonClassName } from "@/ui/components/ui/button";
 

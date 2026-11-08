@@ -5,6 +5,7 @@ query ProductListPaginated(
 	$before: String
 	$channel: String!
 	$languageCode: LanguageCodeEnum!
+	$marketLanguageCode: LanguageCodeEnum!
 	$sortBy: ProductOrder
 	$filter: ProductFilterInput
 	$where: ProductWhereInput

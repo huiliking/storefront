@@ -54,11 +54,11 @@ Browse: `/{locale}/{channel}/{path}`
 /en/uk/products/hoodie     English UI, UK market (GBP) — same language, different channel
 ```
 
-Checkout stays at `/checkout` — locale and channel sync from browse via cookies (see ADR 0001).
+Checkout stays at `/checkout` — the storefront's checkout link carries the market locale (`?locale=`) and an explicit display language (`?lang=`); the channel comes from the checkout. No cookies (ADR 0008).
 
-**Region picker** (header/footer): swap language or market; on catalog detail pages, remap to that locale’s canonical product/category/page slug (ADR 0004). Optional `NEXT_PUBLIC_STOREFRONT_LOCALE_CHANNELS` is a **hard locale↔market matrix** (not just SEO): invalid pairs 404, language switch navigates to the paired channel, the picker filters languages per market, and hreflang keys become region-aware (`ja-JP`). When unset, any allowlisted locale × channel is valid and language switch keeps the current channel.
+**Header controls** (ADR 0008): the **market selector** (left) lists Saleor channels with their paired market locales and changes `/{locale}/{channel}` (currency, availability, document language follow). The **language picker** (right) sets only the display language (`?lang=`) — page text and translated content — and never changes the path or prices. Locale↔channel pairs live in Saleor channel metadata (`storefront.locales`): unpaired combinations are not-found and hreflang alternates are the Saleor pairs (region-aware keys, e.g. `fr-CA`).
 
-**Structural path segments** (`/products/`, `/categories/`, …) stay English in code — only Saleor entity slugs are translatable. Legacy `/{channel}/…` URLs **308** to `/{defaultLocale}/{channel}/…` via middleware.
+**Structural path segments** (`/products/`, `/categories/`, …) stay English in code — only Saleor entity slugs are translatable. There are no locale/channel redirects: legacy `/{channel}/…` URLs and unpaired locales are not-found.
 
 ### Translated catalog slugs (optional)
 
@@ -90,7 +90,7 @@ Defined in `src/config/locale.ts` (`LOCALE_DEFINITIONS`):
 | `ja` | `JA`                      |                              |
 | `ko` | `KO`                      |                              |
 
-Enable a subset per deployment with `NEXT_PUBLIC_STOREFRONT_LOCALES` (comma-separated). Each enabled locale needs `messages/{slug}.json`.
+Enable display languages per deployment with `NEXT_PUBLIC_STOREFRONT_DISPLAY_LANGUAGES` (comma-separated; translation only — markets come from Saleor). Each needs `messages/{slug}.json`.
 
 **Saleor Dashboard** stores translations under **base** language codes (`/translations/PL/…`), not regional variants like `PL_PL`.
 
@@ -110,7 +110,7 @@ Enable a subset per deployment with `NEXT_PUBLIC_STOREFRONT_LOCALES` (comma-sepa
 | `account`         | Login, signup, account shell, orders, settings, addresses   |
 | `checkout`        | Steps, summary, shipping/payment CTAs, errors, confirmation |
 
-**Patterns:** Browse — server `getTranslations({ locale, namespace })` with URL `params.locale`; client under `NextIntlClientProvider` in `(storefront)/[locale]/layout.tsx`. **Checkout** — same provider pattern via `CheckoutIntlProvider`; locale from `browse-locale` cookie / `?locale=`. Types from `messages/en.json` via `src/i18n/types.d.ts`.
+**Patterns:** Browse — server `getTranslations({ locale: await getDisplayLanguage(), namespace })` (the **display language**, not the URL locale); client under `NextIntlClientProvider` in `(storefront)/[locale]/layout.tsx`, whose locale is the display language. **Checkout** — same provider pattern via `CheckoutIntlProvider`; display language from the middleware (`?lang=` → browser → `?locale=`). Types from `messages/en.json` via `src/i18n/types.d.ts`.
 
 Editorial checkout copy (empty session, trust, marketing opt-in) stays in storefront content (`useCheckoutContent`).
 
@@ -119,18 +119,13 @@ Editorial checkout copy (empty session, trust, marketing opt-in) stays in storef
 ## Environment variables
 
 ```env
-# Locales (must match LOCALE_DEFINITIONS + messages/*.json)
-# Also drives hreflang x-default (same URL as root redirect / invalid-locale fallback).
-NEXT_PUBLIC_DEFAULT_LOCALE=en
-NEXT_PUBLIC_STOREFRONT_LOCALES=en,pl,de,fr,fi,nb,ja,ko
+# Display languages (must match LOCALE_DEFINITIONS + messages/*.json) — translation only
+NEXT_PUBLIC_DEFAULT_LOCALE=en                      # last-resort display language
+NEXT_PUBLIC_STOREFRONT_DISPLAY_LANGUAGES=en,pl,de,fr,fi,nb,ja,ko
 
-# Optional: hard locale↔market matrix (404 invalid pairs; language switch jumps channel;
-# hreflang keys become region-aware ja-JP / en-US). When unset, any locale × channel is OK.
-# NEXT_PUBLIC_STOREFRONT_LOCALE_CHANNELS=en:default-channel,ja:japan,pl:channel-pln
-
-# Channels (markets) — unchanged from multi-channel docs
-STOREFRONT_CHANNELS=us,uk,pl
-NEXT_PUBLIC_DEFAULT_CHANNEL=us
+# Channels (markets) and locale↔channel pairs: NOT here — Saleor channel metadata
+# (storefront.locales / storefront.defaultLocale / storefront.default), read with:
+SALEOR_APP_TOKEN=...                               # zero-permission app is enough
 
 # Merchant copy provider (default: saleor — Saleor Models)
 CONTENT_PROVIDER=saleor
@@ -160,11 +155,11 @@ Details: [`data-caching.md`](../skills/saleor-paper-storefront/rules/data-cachin
 
 1. **`src/config/locale.ts`** — add slug to `LOCALE_DEFINITIONS` (bcp47, graphqlLanguageCode, htmlLang).
 2. **`messages/{slug}.json`** — copy structure from `en.json`; translate all keys.
-3. **`NEXT_PUBLIC_STOREFRONT_LOCALES`** — include the new slug.
+3. **`NEXT_PUBLIC_STOREFRONT_DISPLAY_LANGUAGES`** — include the new slug. To also use it as a **market** locale, add it to a channel's `storefront.locales` metadata in the Dashboard (no rebuild).
 4. **Saleor Dashboard** — translate products, categories, menus, attributes for that language; optionally set **translated URL slugs** (Translations → slug) for SEO handles.
 5. **For Saleor Models translations (default provider):** add `config/saleor/fixtures/translations/{slug}.yaml` and run `pnpm configurator:storefront-content:translations`.
 6. **If adding a locale to `LOCALE_DEFINITIONS`:** also add `slugXX` aliases in `src/graphql/LocaleSlugTranslations.graphql` (keep in sync with `graphqlLanguageCode`).
-7. **Verify:** browse URL, product name translation, translated-slug URL + language switch, cart/checkout handoff, hreflang alternates, region picker.
+7. **Verify:** `?lang=` page text and product name translation, market URL + translated slug, cart/checkout handoff (`?locale=` / `?lang=`), hreflang alternates, market selector and language picker.
 
 ---
 

@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import useSelectedPathname from "@/hooks/use-selected-pathname";
 import { MegaMenuCloseContext, MegaMenuColumnHeader, MegaMenuLeafLink } from "./mega-menu-link";
+import { withCurrentDisplayLanguage } from "@/lib/display-language-link";
 
 const STOREFRONT_HEADER_NAV_SELECTOR = "#storefront-header nav";
 
@@ -71,16 +72,16 @@ function MegaMenuTriggerLabel({ item, onClose }: { item: NavMenuItem; onClose: (
 		onClose();
 
 		if (isExternalNavHref(item.href)) {
-			window.location.assign(item.href);
+			window.location.assign(withCurrentDisplayLanguage(item.href));
 			return;
 		}
 
 		if (!params.locale || !params.channel) {
-			window.location.assign(item.href);
+			window.location.assign(withCurrentDisplayLanguage(item.href));
 			return;
 		}
 
-		router.push(buildStorefrontPath(params.locale, params.channel, item.href));
+		router.push(withCurrentDisplayLanguage(buildStorefrontPath(params.locale, params.channel, item.href)));
 	};
 
 	const getPointerType = (event: ReactPointerEvent | MouseEvent) => {

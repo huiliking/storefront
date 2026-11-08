@@ -1,4 +1,9 @@
-query PageGetBySlug($slug: String!, $languageCode: LanguageCodeEnum!, $slugLanguageCode: LanguageCodeEnum) {
+query PageGetBySlug(
+	$slug: String!
+	$languageCode: LanguageCodeEnum!
+	$marketLanguageCode: LanguageCodeEnum!
+	$slugLanguageCode: LanguageCodeEnum
+) {
 	page(slug: $slug, slugLanguageCode: $slugLanguageCode) {
 		id
 		slug
@@ -11,6 +16,9 @@ query PageGetBySlug($slug: String!, $languageCode: LanguageCodeEnum!, $slugLangu
 			seoTitle
 			seoDescription
 			content
+		}
+		# URL slug follows the market locale (URL), not the display language.
+		marketTranslation: translation(languageCode: $marketLanguageCode) {
 			slug
 		}
 		...PageLocaleSlugTranslations

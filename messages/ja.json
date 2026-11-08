@@ -30,6 +30,15 @@
 		"pagination": {
 			"previous": "前へ",
 			"next": "次へ"
+		},
+		"notFound": {
+			"title": "ページが見つかりません",
+			"description": "お探しのページは存在しないか、移動された可能性があります。",
+			"goHome": "ホームへ",
+			"browseProducts": "商品を見る",
+			"productTitle": "商品が見つかりません",
+			"productDescription": "この商品は削除または名称変更されたか、一時的にご利用いただけません。",
+			"goBack": "戻る"
 		}
 	},
 	"pdp": {
@@ -150,7 +159,8 @@
 			"languageTitle": "言語",
 			"languageDescription": "サイトの文言と表示形式",
 			"marketTitle": "マーケット",
-			"marketDescription": "通貨・税・配送"
+			"marketDescription": "通貨・税・配送",
+			"confirmMarketSwitch": "カートはこのマーケットに紐づいています。マーケットを切り替えると新しいカートになります。続行しますか？"
 		}
 	},
 	"account": {

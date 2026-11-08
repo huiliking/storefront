@@ -79,7 +79,7 @@ export default function AccountOverviewPage() {
 }
 ```
 
-**Moving a logged-in area to PPR-safe patterns:** layout owns the auth gate; pages stay sync (`<Suspense><AsyncContent/></Suspense>`); fetch the profile once in the layout and expose via `AccountProvider`/`useAccountUser()` (avoids `cookies()` per page); secondary fetches in nested Suspense; sign-in via `AccountLogin`. When UI reads user from layout context, mutations must `revalidatePath("/account", "layout")` **+** `router.refresh()` (page-only revalidation leaves stale context). Verify with `STOREFRONT_CHANNELS=aud,default-channel pnpm run build`.
+**Moving a logged-in area to PPR-safe patterns:** layout owns the auth gate; pages stay sync (`<Suspense><AsyncContent/></Suspense>`); fetch the profile once in the layout and expose via `AccountProvider`/`useAccountUser()` (avoids `cookies()` per page); secondary fetches in nested Suspense; sign-in via `AccountLogin`. When UI reads user from layout context, mutations must `revalidatePath("/account", "layout")` **+** `router.refresh()` (page-only revalidation leaves stale context). Verify with two storefront channels in Saleor (`storefront.locales` metadata on both) and `pnpm run build`.
 
 ## Anti-patterns
 

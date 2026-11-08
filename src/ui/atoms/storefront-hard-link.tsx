@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode, type MouseEvent } from "react";
+import { useWithDisplayLanguage } from "@/ui/atoms/display-language-context";
 
 type StorefrontHardLinkProps = {
 	href: string;
@@ -14,7 +15,9 @@ type StorefrontHardLinkProps = {
  * auth routes (login after logout) can restore a cached “already signed in → home”
  * payload and feel like the link does nothing.
  */
-export function StorefrontHardLink({ href, className, children }: StorefrontHardLinkProps) {
+export function StorefrontHardLink({ href: rawHref, className, children }: StorefrontHardLinkProps) {
+	// Keep the explicit display-language choice (`?lang=`) across the hard navigation.
+	const href = useWithDisplayLanguage()(rawHref);
 	return (
 		<a
 			href={href}
