@@ -1,0 +1,40 @@
+<html lang="fr-CA">
+	<body style="font-family: Arial, sans-serif; color: #111; max-width: 640px">
+		<h2>Merci pour votre commande!</h2>
+		<p>Nous avons bien reçu votre commande n° {{order.number}}.</p>
+		<table cellpadding="6" style="border-collapse: collapse; width: 100%">
+			<tr style="border-bottom: 1px solid #ccc">
+				<th align="left">Article</th>
+				<th align="right">Qté</th>
+				<th align="right">Total</th>
+			</tr>
+			{{#each order.lines}}
+			<tr>
+				<td>{{translated_product_name}}</td>
+				<td align="right">{{quantity}}</td>
+				<td align="right">
+					{{price total_net_amount total_gross_amount ../order.currency
+					display_gross=../order.display_gross_prices}}
+				</td>
+			</tr>
+			{{/each}}
+		</table>
+		<p>
+			Sous-total : {{price order.subtotal_net_amount order.subtotal_gross_amount order.currency
+			display_gross=order.display_gross_prices}}<br />
+			Livraison : {{price order.shipping_price_net_amount order.shipping_price_gross_amount order.currency
+			display_gross=order.display_gross_prices}}<br />
+			Taxes : {{price order.tax_amount order.tax_amount order.currency
+			display_gross=order.display_gross_prices}}<br />
+			<strong
+				>Total : {{price order.total_net_amount order.total_gross_amount order.currency
+				display_gross=order.display_gross_prices}}</strong
+			>
+		</p>
+		{{#if order.billing_address}}
+		<p><strong>Adresse de facturation</strong><br />{{format_address order.billing_address}}</p>
+		{{/if}}
+		<p style="color: #777; font-size: 12px">Langue du document : {{order.language_code}}</p>
+		<p>— {{ site_name }}</p>
+	</body>
+</html>

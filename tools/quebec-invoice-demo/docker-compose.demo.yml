@@ -1,0 +1,30 @@
+# Québec French-documents demo (ADR 0008) — LOCAL DEV ONLY.
+#
+# Add these two services to the saleor-platform docker-compose.yml (next to api/worker/storefront),
+# or run them alongside it:
+#   docker compose -f docker-compose.yml -f storefront/tools/quebec-invoice-demo/docker-compose.demo.yml up -d mailpit invoice-app
+# Paths below are relative to this file.
+
+services:
+  # Catches every email Saleor sends. Saleor SMTP → mailpit:1025; inbox UI at http://localhost:8025.
+  mailpit:
+    image: axllent/mailpit:v1.20.0
+    ports:
+      - "8025:8025"
+
+  # Renders an invoice in the order's stored language when Saleor fires INVOICE_REQUESTED.
+  invoice-app:
+    build:
+      context: ./invoice-app
+    env_file:
+      - ./invoice-app/.env
+    environment:
+      SALEOR_API_URL: http://api:8000/graphql/
+      PUBLIC_BASE_URL: http://localhost:8001
+    ports:
+      - "8001:8000"
+    volumes:
+      - invoices:/data/invoices
+
+volumes:
+  invoices:

@@ -1,0 +1,4 @@
+{
+	"order_confirmation_subject": "Confirmation de votre commande n° {{ order.number }}",
+	"invoice_ready_subject": "Votre facture n° {{ invoice.number }}"
+}
